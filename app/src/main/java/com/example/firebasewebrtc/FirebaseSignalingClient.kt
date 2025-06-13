@@ -13,32 +13,32 @@ import org.json.JSONObject
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 import java.io.IOException
-import javax.security.auth.callback.Callback
 
 class FirebaseSignalingClient(
-    val callId: String,
+    val calleeId: String,
     private val listener: SignalingListener,
     val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    val callDoc = firestore.collection(AppConstants.FCM_collection).document(callId)
+    val callDoc = firestore.collection(AppConstants.FCM_collection).document(calleeId)
+    val callData = callDoc.get()
 
     private var callListener: ListenerRegistration? = null
     private var iceCandidateListener: ListenerRegistration? = null
 
     init {
         // Listen for SDP offer/answer
-        callListener = callDoc.addSnapshotListener { snapshot, _ ->
-            if (snapshot != null && snapshot.exists()) {
-                val data = snapshot.data ?: return@addSnapshotListener
-                val type = data["type"] as? String ?: return@addSnapshotListener
-                val sdp = data["sdp"] as? String ?: return@addSnapshotListener
-
-                val session = SessionDescription(
-                    SessionDescription.Type.fromCanonicalForm(type), sdp
-                )
-                listener.onRemoteSessionReceived(session)
-            }
-        }
+//        callListener = callDoc.addSnapshotListener { snapshot, _ ->
+//            if (snapshot != null && snapshot.exists()) {
+//                val data = snapshot.data ?: return@addSnapshotListener
+//                val type = data["type"] as? String ?: return@addSnapshotListener
+//                val sdp = data["sdp"] as? String ?: return@addSnapshotListener
+//
+//                val session = SessionDescription(
+//                    SessionDescription.Type.fromCanonicalForm(type), sdp
+//                )
+//                listener.onRemoteSessionReceived(session)
+//            }
+//        }
 
         // Listen for ICE candidates
         iceCandidateListener =
@@ -60,18 +60,18 @@ class FirebaseSignalingClient(
             mapOf(
                 "type" to "offer",
                 "sdp" to offer.description,
-                "callerId" to callerId,
-                "calleeId" to calleeId
+                "calleeId" to calleeId,
+                "callerId" to callerId
             )
         )
 
 
         // 2. Send call notification via HTTP to local server
         val jsonBody = JSONObject().apply {
-            put("calleeId", calleeId)
+//            put("calleeId", calleeId)
             put("title", "📞 Incoming Call")
             put("body", "User $callerId is calling you...")
-            put("callId", callId)
+            put("callId", this@FirebaseSignalingClient.calleeId)
         }
 
         val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
@@ -112,7 +112,7 @@ class FirebaseSignalingClient(
     }
 
     fun sendCallEnded() {
-        firestore.collection("calls").document(callId).delete()
+        firestore.collection("calls").document(calleeId).delete()
     }
 
     fun release() {

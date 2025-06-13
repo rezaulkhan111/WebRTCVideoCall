@@ -6,12 +6,8 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import org.webrtc.AudioTrack
 import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
@@ -27,7 +23,6 @@ import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import org.webrtc.VideoCapturer
 import org.webrtc.VideoTrack
-import org.webrtc.audio.JavaAudioDeviceModule
 
 class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var localView: SurfaceViewRenderer
@@ -42,8 +37,8 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var eglBase: EglBase
     private lateinit var mSignalingClient: FirebaseSignalingClient
 
-    private var callId = "test-call" // Replace with dynamic ID or pass via Intent
-    private var isCaller = false // Replace with dynamic ID or pass via Intent
+    private var localCalleeId = "test-call" // Replace with dynamic ID or pass via Intent
+    private var localIsCaller = false // Replace with dynamic ID or pass via Intent
 
     private val PERMISSIONS = arrayOf(
         Manifest.permission.CAMERA,
@@ -59,10 +54,10 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
         remoteView = findViewById<SurfaceViewRenderer>(R.id.remoteView)
 
         val callerIdData: String = intent.getStringExtra("callerIdData").toString()
-        isCaller = intent.getBooleanExtra("isCaller", true)
+        localIsCaller = intent.getBooleanExtra("isCaller", true)
 
         if (!callerIdData.isNullOrEmpty()) {
-            callId = callerIdData.toString()
+            localCalleeId = callerIdData.toString()
             requestPermissionsIfNeeded()
         }
     }
@@ -119,7 +114,7 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
             setEnabled(true)
         }
 
-        mSignalingClient = FirebaseSignalingClient(callId, object : SignalingListener {
+        mSignalingClient = FirebaseSignalingClient(localCalleeId, object : SignalingListener {
             override fun onRemoteSessionReceived(session: SessionDescription) {
                 peerConnection.setRemoteDescription(SimpleSdpObserver(), session)
                 if (session.type == SessionDescription.Type.OFFER) {
@@ -148,7 +143,7 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
             peerConnectionFactory,
             eglBase.eglBaseContext,
             signalingClient = mSignalingClient,
-            isCaller = isCaller,
+            isCaller = localIsCaller,
             remoteView
         )
 
@@ -177,18 +172,18 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
             }
         }
 
-        if (isCaller) {
-            startCall(peerConnection)
+        if (localIsCaller) {
+            sendCallOffer(peerConnection)
         }
     }
 
-    fun startCall(peerConnection: PeerConnection) {
+    fun sendCallOffer(peerConnection: PeerConnection) {
         val constraints = MediaConstraints()
         peerConnection.createOffer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(sessionDescription: SessionDescription?) {
                 sessionDescription?.let {
                     peerConnection.setLocalDescription(SimpleSdpObserver(), it)
-                    mSignalingClient.sendOffer(it)
+                    mSignalingClient.sendOffer(it, calleeId = localCalleeId, SharedPreferenceUtil.getFCMCallerId())
                 }
             }
         }, constraints)
