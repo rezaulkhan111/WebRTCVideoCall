@@ -3,6 +3,7 @@ package com.example.firebasewebrtc
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -20,7 +21,6 @@ class FirebaseSignalingClient(
     val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
     val callDoc = firestore.collection(AppConstants.FCM_collection).document(calleeId)
-    val callData = callDoc.get()
 
     private var callListener: ListenerRegistration? = null
     private var iceCandidateListener: ListenerRegistration? = null
@@ -55,23 +55,27 @@ class FirebaseSignalingClient(
             }
     }
 
-    fun sendOffer(offer: SessionDescription, calleeId: String? = null, callerId: String? = null) {
-        callDoc.set(
+    fun sendOffer(
+        offer: SessionDescription,
+        tergateBUserCallId: String? = null,
+        mCurrentUserCallId: String? = null
+    ) {
+        callDoc.update(
             mapOf(
                 "type" to "offer",
                 "sdp" to offer.description,
-                "calleeId" to calleeId,
-                "callerId" to callerId
+                "calleeId" to tergateBUserCallId,
+                "callerId" to mCurrentUserCallId
             )
         )
 
 
         // 2. Send call notification via HTTP to local server
         val jsonBody = JSONObject().apply {
-//            put("calleeId", calleeId)
+            put("calleeId", tergateBUserCallId)
             put("title", "📞 Incoming Call")
-            put("body", "User $callerId is calling you...")
-            put("callId", this@FirebaseSignalingClient.calleeId)
+            put("body", "User $mCurrentUserCallId is calling you...")
+            put("callId", tergateBUserCallId)
         }
 
         val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
@@ -79,12 +83,11 @@ class FirebaseSignalingClient(
         val client = OkHttpClient()
         val request = Request.Builder()
             .url("http://192.168.0.110:3000/send-call-notification") // Your local Node server
-            .post(requestBody)
-            .build()
+            .post(requestBody).build()
 
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onResponse(call: Call, response: Response) {
-                Log.d("FCM", "Notification sent: ${response.body?.string()}")
+                Log.e("FCM", "Notification sent: ${response.body?.string()}")
             }
 
             override fun onFailure(call: Call, e: IOException) {
@@ -94,7 +97,7 @@ class FirebaseSignalingClient(
     }
 
     fun sendAnswer(answer: SessionDescription) {
-        callDoc.set(
+        callDoc.update(
             mapOf(
                 "type" to "answer", "sdp" to answer.description
             )

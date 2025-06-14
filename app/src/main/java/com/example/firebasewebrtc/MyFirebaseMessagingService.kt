@@ -22,10 +22,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val calleeId: String? = SharedPreferenceUtil.getFCMToken()
         if (!calleeId.isNullOrEmpty()) {
-            FirebaseFirestore.getInstance()
-                .collection(AppConstants.FCM_collection)
-                .document(calleeId)
-                .update("fcmToken", token)
+            FirebaseFirestore.getInstance().collection(AppConstants.FCM_collection)
+                .document(calleeId).update("fcmToken", token)
         }
     }
 //
@@ -37,22 +35,24 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        val dataMessage: FirebaseRMessage =
-            Gson().fromJson(Gson().toJson(remoteMessage).toString(), FirebaseRMessage::class.java)
+        val data = remoteMessage.data
 
-        var callId: String? = ""
-        var callerId: String? = ""
-        var contentTitle: String? = ""
+        val localFcmData = FirebaseRMessage(
+            callId = data["callId"],
+            calleeId = data["calleeId"],
+            title = data["title"],
+            body = data["body"]
+        )
 
-        dataMessage.bundle?.mMap?.apply {
-            callId = googleCSenderId
-            callerId = from
-            contentTitle = title
-        }
-        Log.e("FCM", "onMessageReceived: " + Gson().toJson(dataMessage.bundle?.mMap))
+//        dataMessage.bundle?.mMap?.apply {
+//            callId = googleCSenderId
+//            callerId = from
+//            contentTitle = title
+//        }
+        Log.e("FCM", "onMessageReceived: " + localFcmData.callId + " " + localFcmData.calleeId)
         val intent = Intent(this, IncomingCallActivity::class.java).apply {
-            putExtra("callId", callId)
-            putExtra("callerId", callerId)
+            putExtra("callId", localFcmData.callId)
+            putExtra("callerId", localFcmData.calleeId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -61,17 +61,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         )
 
         val notification = NotificationCompat.Builder(this, "call_channel")
-            .setSmallIcon(R.drawable.ic_launcher_foreground).setContentTitle(contentTitle)
-            .setContentText("Call from $callerId").setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setSmallIcon(R.drawable.ic_launcher_foreground).setContentTitle(localFcmData.title)
+            .setContentText(localFcmData.body).setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setFullScreenIntent(pendingIntent, true) // ✅ KEY LINE
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                "call_channel",
-                "Incoming Calls",
-                NotificationManager.IMPORTANCE_HIGH
+                "call_channel", "Incoming Calls", NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Channel for incoming call notifications"
                 enableLights(true)

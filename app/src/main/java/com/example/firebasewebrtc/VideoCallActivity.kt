@@ -37,12 +37,12 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var eglBase: EglBase
     private lateinit var mSignalingClient: FirebaseSignalingClient
 
-    private var localCalleeId = "test-call" // Replace with dynamic ID or pass via Intent
+//    private var localCalleeId = "test-call" // Replace with dynamic ID or pass via Intent
+    private var callOrSessionId: String = "" // Replace with dynamic ID or pass via Intent
     private var localIsCaller = false // Replace with dynamic ID or pass via Intent
 
     private val PERMISSIONS = arrayOf(
-        Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO
+        Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO
     )
     private val PERMISSION_REQUEST_CODE = 1
 
@@ -53,11 +53,12 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
         localView = findViewById<SurfaceViewRenderer>(R.id.localView)
         remoteView = findViewById<SurfaceViewRenderer>(R.id.remoteView)
 
-        val callerIdData: String = intent.getStringExtra("callerIdData").toString()
+//        val callerIdData: String = intent.getStringExtra("callerIdData").toString()
+        callOrSessionId = intent.getStringExtra("callId").toString()
         localIsCaller = intent.getBooleanExtra("isCaller", true)
 
-        if (!callerIdData.isNullOrEmpty()) {
-            localCalleeId = callerIdData.toString()
+        if (!callOrSessionId.isNullOrEmpty()) {
+//            localCalleeId = callOrSessionId.toString()
             requestPermissionsIfNeeded()
         }
     }
@@ -114,7 +115,7 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
             setEnabled(true)
         }
 
-        mSignalingClient = FirebaseSignalingClient(localCalleeId, object : SignalingListener {
+        mSignalingClient = FirebaseSignalingClient(callOrSessionId, object : SignalingListener {
             override fun onRemoteSessionReceived(session: SessionDescription) {
                 peerConnection.setRemoteDescription(SimpleSdpObserver(), session)
                 if (session.type == SessionDescription.Type.OFFER) {
@@ -183,7 +184,11 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
             override fun onCreateSuccess(sessionDescription: SessionDescription?) {
                 sessionDescription?.let {
                     peerConnection.setLocalDescription(SimpleSdpObserver(), it)
-                    mSignalingClient.sendOffer(it, calleeId = localCalleeId, SharedPreferenceUtil.getFCMCallerId())
+                    mSignalingClient.sendOffer(
+                        it,
+                        tergateBUserCallId = callOrSessionId,
+                        SharedPreferenceUtil.getFCMCallerId()
+                    )
                 }
             }
         }, constraints)

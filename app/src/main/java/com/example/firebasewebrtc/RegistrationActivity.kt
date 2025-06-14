@@ -12,6 +12,9 @@ class RegistrationActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegistrationBinding
 
+    val firestore = FirebaseFirestore.getInstance()
+    val fireMessage = FirebaseMessaging.getInstance().token
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
@@ -23,37 +26,59 @@ class RegistrationActivity : AppCompatActivity() {
         } else {
             binding.apply {
                 btnSignUp.setOnClickListener {
-                    val calleeId = tietNumberInput.text.toString()
-                    if (!calleeId.isNullOrEmpty()) {
-                        calleeId.toString()
-                        SharedPreferenceUtil.setFCMCallerId(calleeId)
+                    val localCalleeId = tietNumberInput.text.toString()
 
-                        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                            if (!task.isSuccessful) {
-                                Log.w("FCM", "Fetching FCM token failed", task.exception)
-                                return@addOnCompleteListener
-                            }
+                    if (!localCalleeId.isNullOrEmpty()) {
+                        firestore.collection(AppConstants.FCM_collection).document(localCalleeId)
+                            .get().addOnSuccessListener { document ->
+                                if (document.exists()) {
+                                    val documentId = document.id
+                                    val fcmToken = document.getString("fcmToken")
 
-                            val fcmToken = task.result
-                            SharedPreferenceUtil.setFCMToken(fcmToken)
-                            // Now save both calleeId and token to Firestore
-                            val userData = mapOf(
-                                "calleeId" to calleeId,
-                                "fcmToken" to fcmToken,
-                                "sdp" to null,
-                                "type" to null
-                            )
+                                    SharedPreferenceUtil.setFCMCallerId(documentId)
+                                    SharedPreferenceUtil.setFCMToken(fcmToken)
 
-                            FirebaseFirestore.getInstance().collection(AppConstants.FCM_collection)
-                                .document(calleeId).set(userData).addOnSuccessListener {
-                                    Log.d("FCM", "FCM Token saved for user: $calleeId")
-                                }.addOnFailureListener {
-                                    Log.e("FCM", "Error saving token", it)
+                                    startActivity(
+                                        Intent(
+                                            this@RegistrationActivity, CallListActivity::class.java
+                                        )
+                                    )
+                                    finish()
+
+                                } else {
+                                    registerNewUser(localCalleeId)
                                 }
-                        }
+                            }.addOnFailureListener { exception ->
+                            }
                     }
                 }
             }
+        }
+    }
+
+    private fun registerNewUser(calleeId: String) {
+        fireMessage.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                return@addOnCompleteListener
+            }
+
+            val fcmToken = task.result
+            SharedPreferenceUtil.setFCMCallerId(calleeId)
+            SharedPreferenceUtil.setFCMToken(fcmToken)
+
+            val userData = mapOf(
+                "calleeId" to calleeId, "fcmToken" to fcmToken, "sdp" to null, "type" to null
+            )
+
+            firestore.collection(AppConstants.FCM_collection).document(calleeId).set(userData)
+                .addOnSuccessListener {
+
+
+                    startActivity(Intent(this@RegistrationActivity, CallListActivity::class.java))
+                    finish()
+                }.addOnFailureListener {
+
+                }
         }
     }
 }

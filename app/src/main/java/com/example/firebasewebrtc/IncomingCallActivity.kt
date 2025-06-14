@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 class IncomingCallActivity : AppCompatActivity() {
 
     private lateinit var callerId: String
+    private lateinit var callId: String
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +22,7 @@ class IncomingCallActivity : AppCompatActivity() {
         setContentView(R.layout.activity_incoming_call)
 
         callerId = intent.getStringExtra("callerId") ?: ""
+        callId = intent.getStringExtra("callId") ?: ""
         if (callerId.isEmpty()) {
             Toast.makeText(this, "Caller ID not found", Toast.LENGTH_SHORT).show()
             finish()
@@ -35,6 +37,7 @@ class IncomingCallActivity : AppCompatActivity() {
         btnAccept.setOnClickListener {
             val intent = Intent(this, VideoCallActivity::class.java)
             intent.putExtra("callerIdData", callerId)
+            intent.putExtra("callId", callId)
             intent.putExtra("isCaller", false) // Not the caller
             startActivity(intent)
             finish()

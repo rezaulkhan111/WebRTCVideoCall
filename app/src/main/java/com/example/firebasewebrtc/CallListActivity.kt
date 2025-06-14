@@ -26,7 +26,6 @@ class CallListActivity : BaseActivity(), UserInteraction {
         setContentView(binding.root)
 
         binding.apply {
-
             rvUserList.apply {
                 layoutManager =
                     LinearLayoutManager(this@CallListActivity, RecyclerView.VERTICAL, false)
@@ -36,18 +35,21 @@ class CallListActivity : BaseActivity(), UserInteraction {
         }
 
         val currentCallId = SharedPreferenceUtil.getFCMCallerId().toString()
-
         firestore.collection(AppConstants.FCM_collection).get()
             .addOnSuccessListener { querySnapshot ->
                 querySnapshot.forEach { documentId ->
                     if (documentId.id != currentCallId) {
-                        lsUserData.add(UserModel(calleeId = documentId.id))
+                        val localFcmToken = documentId.getString("fcmToken")
+                        lsUserData.add(
+                            UserModel(
+                                calleeId = documentId.id,
+                                fcmToken = localFcmToken
+                            )
+                        )
                     }
                 }
                 adapterUser.setWorkingAreas(lsUserData)
-
             }.addOnFailureListener { exception ->
-                Log.e("Firestore", "Error getting document IDs: ", exception)
             }
     }
 
@@ -60,7 +62,7 @@ class CallListActivity : BaseActivity(), UserInteraction {
 
         if (!workingArea.calleeId.isNullOrEmpty()) {
             startActivity(Intent(this, VideoCallActivity::class.java).apply {
-                putExtra("callerIdData", workingArea.calleeId.toString())
+                putExtra("callId", workingArea.calleeId.toString())
                 putExtra("isCaller", true)
             })
         }

@@ -3,10 +3,12 @@ package com.example.firebasewebrtc
 import com.google.gson.annotations.SerializedName
 
 
-class FirebaseRMessage {
-    @SerializedName("bundle")
-     val bundle: FirebaseBundle? = null
-}
+class FirebaseRMessage(
+    val callId: String? = null,
+    val calleeId: String? = null,
+    val title: String? = null,
+    val body: String? = null
+)
 
 class FirebaseBundle {
     @SerializedName("mMap")
