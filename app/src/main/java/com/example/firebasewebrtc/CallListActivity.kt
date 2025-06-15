@@ -8,6 +8,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firebasewebrtc.databinding.ActivityCallListBinding
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.gson.Gson
+import org.webrtc.MediaConstraints
+import org.webrtc.PeerConnection
+import org.webrtc.SessionDescription
+import retrofit2.Callback
 
 class CallListActivity : BaseActivity(), UserInteraction {
 
@@ -42,8 +47,7 @@ class CallListActivity : BaseActivity(), UserInteraction {
                         val localFcmToken = documentId.getString("fcmToken")
                         lsUserData.add(
                             UserModel(
-                                calleeId = documentId.id,
-                                fcmToken = localFcmToken
+                                calleeId = documentId.id, fcmToken = localFcmToken
                             )
                         )
                     }
@@ -54,17 +58,50 @@ class CallListActivity : BaseActivity(), UserInteraction {
     }
 
     override fun onClickCall(workingArea: UserModel) {
-        if (isCallStatus) {
-            isCallStatus = false
-        } else {
-            isCallStatus = true
-        }
+//        if (isCallStatus) {
+//            isCallStatus = false
+//        } else {
+//            isCallStatus = true
+//        }
 
         if (!workingArea.calleeId.isNullOrEmpty()) {
-            startActivity(Intent(this, VideoCallActivity::class.java).apply {
-                putExtra("callId", workingArea.calleeId.toString())
-                putExtra("isCaller", true)
-            })
+//            startActivity(Intent(this, SendCallActivity::class.java).apply {
+//                putExtra("callId", workingArea.calleeId.toString())
+//                putExtra("isCaller", true)
+//            })
+            fetchNotification(workingArea.calleeId)
         }
+    }
+
+    fun fetchNotification(
+        callOrSessionId: String
+    ) {
+        val dateService =
+            RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
+        val call = dateService?.requestNotification(
+            NotificationRequest(
+                calleeId = callOrSessionId,
+                title = "📞 Incoming Call",
+                body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
+                callId = callOrSessionId
+            )
+        )
+        call!!.enqueue(object : Callback<NotificationRequest?> {
+            @SuppressLint("NewApi", "SetTextI18n")
+            override fun onResponse(
+                call: retrofit2.Call<NotificationRequest?>,
+                response: retrofit2.Response<NotificationRequest?>
+            ) {
+                if (response.isSuccessful) {
+                    Log.e("CallActivity", "if: " + Gson().toJson(response.body()))
+                } else {
+                    Log.e("CallActivity", "else: " + Gson().toJson(response.errorBody()))
+                }
+            }
+
+            override fun onFailure(call: retrofit2.Call<NotificationRequest?>, t: Throwable) {
+                Log.e("CallActivity", "else: " + t.message)
+            }
+        })
     }
 }

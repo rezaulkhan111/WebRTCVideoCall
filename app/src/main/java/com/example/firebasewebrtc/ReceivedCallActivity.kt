@@ -6,8 +6,12 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import org.webrtc.AudioTrack
 import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
@@ -24,7 +28,7 @@ import org.webrtc.SurfaceViewRenderer
 import org.webrtc.VideoCapturer
 import org.webrtc.VideoTrack
 
-class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
+class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var localView: SurfaceViewRenderer
     private lateinit var remoteView: SurfaceViewRenderer
     private lateinit var peerConnectionFactory: PeerConnectionFactory
@@ -37,7 +41,8 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var eglBase: EglBase
     private lateinit var mSignalingClient: FirebaseSignalingClient
 
-//    private var localCalleeId = "test-call" // Replace with dynamic ID or pass via Intent
+
+    //    private var localCalleeId = "test-call" // Replace with dynamic ID or pass via Intent
     private var callOrSessionId: String = "" // Replace with dynamic ID or pass via Intent
     private var localIsCaller = false // Replace with dynamic ID or pass via Intent
 
@@ -48,7 +53,7 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_video_call)
+        setContentView(R.layout.activity_received_call)
 
         localView = findViewById<SurfaceViewRenderer>(R.id.localView)
         remoteView = findViewById<SurfaceViewRenderer>(R.id.remoteView)
@@ -162,6 +167,8 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
 
         // 5. End Call Button
         endCallButton.setOnClickListener {
+            mSignalingClient.sendCallEnded()
+
             try {
                 peerConnection.close()
                 videoCapturer.stopCapture()
@@ -172,26 +179,6 @@ class VideoCallActivity : BaseActivity(), PeerConnection.Observer {
                 e.printStackTrace()
             }
         }
-
-        if (localIsCaller) {
-            sendCallOffer(peerConnection)
-        }
-    }
-
-    fun sendCallOffer(peerConnection: PeerConnection) {
-        val constraints = MediaConstraints()
-        peerConnection.createOffer(object : SimpleSdpObserver() {
-            override fun onCreateSuccess(sessionDescription: SessionDescription?) {
-                sessionDescription?.let {
-                    peerConnection.setLocalDescription(SimpleSdpObserver(), it)
-                    mSignalingClient.sendOffer(
-                        it,
-                        tergateBUserCallId = callOrSessionId,
-                        SharedPreferenceUtil.getFCMCallerId()
-                    )
-                }
-            }
-        }, constraints)
     }
 
     override fun onSignalingChange(p0: PeerConnection.SignalingState?) {

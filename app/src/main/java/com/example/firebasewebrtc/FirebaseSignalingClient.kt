@@ -60,6 +60,7 @@ class FirebaseSignalingClient(
         tergateBUserCallId: String? = null,
         mCurrentUserCallId: String? = null
     ) {
+        // 2. Send call notification via HTTP to local server
         callDoc.update(
             mapOf(
                 "type" to "offer",
@@ -68,32 +69,6 @@ class FirebaseSignalingClient(
                 "callerId" to mCurrentUserCallId
             )
         )
-
-
-        // 2. Send call notification via HTTP to local server
-        val jsonBody = JSONObject().apply {
-            put("calleeId", tergateBUserCallId)
-            put("title", "📞 Incoming Call")
-            put("body", "User $mCurrentUserCallId is calling you...")
-            put("callId", tergateBUserCallId)
-        }
-
-        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaTypeOrNull())
-
-        val client = OkHttpClient()
-        val request = Request.Builder()
-            .url("http://192.168.0.110:3000/send-call-notification") // Your local Node server
-            .post(requestBody).build()
-
-        client.newCall(request).enqueue(object : okhttp3.Callback {
-            override fun onResponse(call: Call, response: Response) {
-                Log.e("FCM", "Notification sent: ${response.body?.string()}")
-            }
-
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("FCM", "Notification send failed: ${e.message}")
-            }
-        })
     }
 
     fun sendAnswer(answer: SessionDescription) {
