@@ -63,8 +63,9 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
         localIsCaller = intent.getBooleanExtra("isCaller", true)
 
         if (!callOrSessionId.isNullOrEmpty()) {
+            Log.e("RCallActivity","callOrSessionId: "+callOrSessionId)
 //            localCalleeId = callOrSessionId.toString()
-            requestPermissionsIfNeeded()
+//            requestPermissionsIfNeeded()
         }
     }
 
@@ -167,7 +168,7 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
 
         // 5. End Call Button
         endCallButton.setOnClickListener {
-            mSignalingClient.sendCallEnded()
+//            mSignalingClient.sendCallEnded()
 
             try {
                 peerConnection.close()

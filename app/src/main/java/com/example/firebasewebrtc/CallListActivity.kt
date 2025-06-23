@@ -65,11 +65,11 @@ class CallListActivity : BaseActivity(), UserInteraction {
 //        }
 
         if (!workingArea.calleeId.isNullOrEmpty()) {
-//            startActivity(Intent(this, SendCallActivity::class.java).apply {
-//                putExtra("callId", workingArea.calleeId.toString())
-//                putExtra("isCaller", true)
-//            })
-            fetchNotification(workingArea.calleeId)
+            startActivity(Intent(this, SendCallActivity::class.java).apply {
+                putExtra("callId", workingArea.calleeId.toString())
+                putExtra("isCaller", true)
+            })
+//            fetchNotification(workingArea.calleeId)
         }
     }
 

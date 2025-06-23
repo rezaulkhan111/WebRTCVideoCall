@@ -172,7 +172,7 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
 
         // 5. End Call Button
         endCallButton.setOnClickListener {
-            mSignalingClient.sendCallEnded()
+//            mSignalingClient.sendCallEnded()
 
             try {
                 peerConnection.close()
