@@ -12,6 +12,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.gson.Gson
 import org.webrtc.AudioTrack
 import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
@@ -23,6 +24,7 @@ import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RtpTransceiver
+import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import org.webrtc.VideoCapturer
@@ -41,15 +43,17 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var eglBase: EglBase
     private lateinit var mSignalingClient: FirebaseSignalingClient
 
-
-    //    private var localCalleeId = "test-call" // Replace with dynamic ID or pass via Intent
-    private var callOrSessionId: String = "" // Replace with dynamic ID or pass via Intent
-    private var localIsCaller = false // Replace with dynamic ID or pass via Intent
+    private var callOrSessionId: String = ""
+    private var localIsCaller = false
 
     private val PERMISSIONS = arrayOf(
         Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO
     )
     private val PERMISSION_REQUEST_CODE = 1
+
+    val iceServers = listOf(
+        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,14 +62,12 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
         localView = findViewById<SurfaceViewRenderer>(R.id.localView)
         remoteView = findViewById<SurfaceViewRenderer>(R.id.remoteView)
 
-//        val callerIdData: String = intent.getStringExtra("callerIdData").toString()
         callOrSessionId = intent.getStringExtra("callId").toString()
         localIsCaller = intent.getBooleanExtra("isCaller", true)
 
         if (!callOrSessionId.isNullOrEmpty()) {
-            Log.e("RCallActivity","callOrSessionId: "+callOrSessionId)
-//            localCalleeId = callOrSessionId.toString()
-//            requestPermissionsIfNeeded()
+            Log.e("RCallActivity", "callOrSessionId: " + callOrSessionId)
+            requestPermissionsIfNeeded()
         }
     }
 
@@ -121,16 +123,27 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
             setEnabled(true)
         }
 
+
         mSignalingClient = FirebaseSignalingClient(callOrSessionId, object : SignalingListener {
+
             override fun onRemoteSessionReceived(session: SessionDescription) {
                 peerConnection.setRemoteDescription(SimpleSdpObserver(), session)
+
                 if (session.type == SessionDescription.Type.OFFER) {
-                    peerConnection.createAnswer(object : SimpleSdpObserver() {
-                        override fun onCreateSuccess(answer: SessionDescription?) {
-                            answer?.let {
-                                peerConnection.setLocalDescription(SimpleSdpObserver(), it)
-                                mSignalingClient.sendAnswer(it)
-                            }
+                    peerConnection.createAnswer(object : SdpObserver {
+
+                        override fun onCreateSuccess(answer: SessionDescription) {
+                            peerConnection.setLocalDescription(SimpleSdpObserver(), answer)
+                            mSignalingClient.sendAnswer(answer)
+                        }
+
+                        override fun onSetSuccess() {}
+                        override fun onCreateFailure(error: String) {
+                            Log.e("ReceivedCall", "Answer creation failed: $error")
+                        }
+
+                        override fun onSetFailure(error: String) {
+                            Log.e("ReceivedCall", "Set local description failed: $error")
                         }
                     }, MediaConstraints())
                 }
@@ -146,12 +159,7 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
         })
 
         peerConnection = createPeerConnection(
-            this,
-            peerConnectionFactory,
-            eglBase.eglBaseContext,
-            signalingClient = mSignalingClient,
-            isCaller = localIsCaller,
-            remoteView
+            peerConnectionFactory, signalingClient = mSignalingClient, remoteView
         )
 
         val localMedia = addLocalMedia(
@@ -168,8 +176,7 @@ class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
 
         // 5. End Call Button
         endCallButton.setOnClickListener {
-//            mSignalingClient.sendCallEnded()
-
+            mSignalingClient.sendCallEnded()
             try {
                 peerConnection.close()
                 videoCapturer.stopCapture()

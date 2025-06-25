@@ -1,8 +1,6 @@
 package com.example.firebasewebrtc
 
-import android.content.Context
 import org.webrtc.DataChannel
-import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
@@ -12,11 +10,8 @@ import org.webrtc.SurfaceViewRenderer
 import org.webrtc.VideoTrack
 
 fun createPeerConnection(
-    context: Context,
     factory: PeerConnectionFactory,
-    eglBaseContext: EglBase.Context,
     signalingClient: FirebaseSignalingClient,
-    isCaller: Boolean,
     remoteView: SurfaceViewRenderer
 ): PeerConnection {
 
@@ -32,7 +27,6 @@ fun createPeerConnection(
         }
 
         override fun onIceCandidatesRemoved(p0: Array<out IceCandidate?>?) {
-            TODO("Not yet implemented")
         }
 
         override fun onAddStream(stream: MediaStream) {

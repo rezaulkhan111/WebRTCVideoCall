@@ -1,38 +1,57 @@
 package com.example.firebasewebrtc
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
+import com.google.gson.Gson
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 
 class FirebaseSignalingClient(
-    val calleeId: String,
+    callOrSessionId: String,
     private val listener: SignalingListener,
-    val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    val callDoc = firestore.collection(AppConstants.FCM_collection).document(calleeId)
+    val callDoc = firestore.collection(AppConstants.FCM_collection).document(callOrSessionId)
 
     private var callListener: ListenerRegistration? = null
     private var iceCandidateListener: ListenerRegistration? = null
 
     init {
         // Listen for SDP offer/answer
-//        callListener = callDoc.addSnapshotListener { snapshot, _ ->
-//            if (snapshot != null && snapshot.exists()) {
-//                val data = snapshot.data ?: return@addSnapshotListener
-//                val type = data["type"] as? String ?: return@addSnapshotListener
-//                val sdp = data["sdp"] as? String ?: return@addSnapshotListener
-//
-//                val session = SessionDescription(
-//                    SessionDescription.Type.fromCanonicalForm(type), sdp
-//                )
-//                listener.onRemoteSessionReceived(session)
-//            }
-//        }
+        callListener = callDoc.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("Firestore", "Listener error", error)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                val data = snapshot.data ?: return@addSnapshotListener
+
+                val type = data["type"] as? String /*as? String ?: return@addSnapshotListener*/
+                val sdp = data["sdp"] as? String /*as? String ?: return@addSnapshotListener*/
+                Log.e("Firestore", "Snapshot data: ${type} " + Gson().toJson(snapshot.data))
+
+
+                if (!type.isNullOrEmpty() && !sdp.isNullOrEmpty()) {
+                    val session = SessionDescription(
+                        SessionDescription.Type.fromCanonicalForm(type), sdp
+                    )
+                    listener.onRemoteSessionReceived(session)
+                }
+
+//                if (!type.isNullOrEmpty() && type == "end") {
+//                    listener.onCallEnded()
+//                }
+            }
+        }
 
         // Listen for ICE candidates
         iceCandidateListener =
             callDoc.collection("candidates").addSnapshotListener { snapshots, _ ->
+                Log.e("Firestore", "iceCandidateListener: ${snapshots}")
+
                 snapshots?.documentChanges?.forEach { change ->
                     val doc = change.document
                     val candidate = IceCandidate(
@@ -50,23 +69,25 @@ class FirebaseSignalingClient(
         tergateBUserCallId: String? = null,
         mCurrentUserCallId: String? = null
     ) {
-        // 2. Send call notification via HTTP to local server
-        callDoc.update(
-            mapOf(
-                "type" to "offer",
-                "sdp" to offer.description,
-                "calleeId" to tergateBUserCallId,
-                "callerId" to mCurrentUserCallId
-            )
+        Log.e("Firestore", "Sending offer SDP: ${offer.description}")
+
+        val data = mutableMapOf<String, Any>(
+            "type" to "offer", "sdp" to offer.description
         )
+
+        tergateBUserCallId?.let { data["calleeId"] = it }
+        mCurrentUserCallId?.let { data["callerId"] = it }
+
+        callDoc.set(data, SetOptions.merge()).addOnSuccessListener {
+            Log.d("Firestore", "Offer successfully sent.")
+        }.addOnFailureListener {
+            Log.e("Firestore", "Failed to send offer: ${it.message}")
+        }
     }
 
     fun sendAnswer(answer: SessionDescription) {
-        callDoc.update(
-            mapOf(
-                "type" to "answer", "sdp" to answer.description
-            )
-        )
+        Log.e("Firestore", "sendAnswer: ${answer.type}")
+        callDoc.set(mapOf("type" to "answer", "sdp" to answer.description), SetOptions.merge())
     }
 
     fun sendIceCandidate(candidate: IceCandidate) {
@@ -80,7 +101,8 @@ class FirebaseSignalingClient(
     }
 
     fun sendCallEnded() {
-        firestore.collection("calls").document(calleeId).delete()
+//        firestore.collection("calls").document(callOrSessionId)
+        callDoc.set(mapOf("type" to "end", "sdp" to null), SetOptions.merge())
     }
 
     fun release() {
