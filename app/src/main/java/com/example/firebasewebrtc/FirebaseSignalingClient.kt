@@ -29,8 +29,16 @@ class FirebaseSignalingClient(
             if (snapshot != null && snapshot.exists()) {
                 val data = snapshot.data ?: return@addSnapshotListener
 
-                val type = data["type"] as? String /*as? String ?: return@addSnapshotListener*/
-                val sdp = data["sdp"] as? String /*as? String ?: return@addSnapshotListener*/
+                val type = data["type"] as? String ?: return@addSnapshotListener
+
+                if (type == "callEnd") {
+                    listener.onCallEnded()
+
+                    callDoc.set(mapOf("type" to null), SetOptions.merge())
+                    return@addSnapshotListener
+                }
+
+                val sdp = data["sdp"] as? String ?: return@addSnapshotListener
                 Log.e("Firestore", "Snapshot data: ${type} " + Gson().toJson(snapshot.data))
 
 
@@ -40,10 +48,6 @@ class FirebaseSignalingClient(
                     )
                     listener.onRemoteSessionReceived(session)
                 }
-
-//                if (!type.isNullOrEmpty() && type == "end") {
-//                    listener.onCallEnded()
-//                }
             }
         }
 
@@ -101,8 +105,7 @@ class FirebaseSignalingClient(
     }
 
     fun sendCallEnded() {
-//        firestore.collection("calls").document(callOrSessionId)
-        callDoc.set(mapOf("type" to "end", "sdp" to null), SetOptions.merge())
+        callDoc.set(mapOf("type" to "callEnd", "sdp" to null), SetOptions.merge())
     }
 
     fun release() {

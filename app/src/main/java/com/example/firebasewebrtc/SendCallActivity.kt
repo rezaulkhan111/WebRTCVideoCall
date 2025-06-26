@@ -141,7 +141,8 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
             }
 
             override fun onCallEnded() {
-                finish()
+                mSignalingClient.release()
+                releaseAllConn()
             }
         })
 
@@ -166,15 +167,20 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
         // 5. End Call Button
         endCallButton.setOnClickListener {
             mSignalingClient.sendCallEnded()
-            try {
-                peerConnection.close()
-                videoCapturer.stopCapture()
-                localView.release()
-                remoteView.release()
-                finish()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            releaseAllConn()
+        }
+    }
+
+    private fun releaseAllConn() {
+        try {
+            peerConnection.close()
+            videoCapturer.stopCapture()
+            localView.release()
+            remoteView.release()
+
+            finish()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
