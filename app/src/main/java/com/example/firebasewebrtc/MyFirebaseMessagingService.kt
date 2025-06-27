@@ -26,12 +26,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 .document(calleeId).update("fcmToken", token)
         }
     }
-//
-//    private fun saveTokenToFirestore(token: String) {
-//        val userId = "getCurrentUserIdOrDeviceId()" // implement this uniquely
-//        val data = mapOf("fcmToken" to token)
-//        FirebaseFirestore.getInstance().collection("users").document(userId).set(data)
-//    }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
@@ -44,11 +38,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             body = data["body"]
         )
 
-//        dataMessage.bundle?.mMap?.apply {
-//            callId = googleCSenderId
-//            callerId = from
-//            contentTitle = title
-//        }
         Log.e("FCM", "onMessageReceived: " + localFcmData.callId + " " + localFcmData.calleeId)
         val intent = Intent(this, IncomingCallActivity::class.java).apply {
             putExtra("callId", localFcmData.callId)

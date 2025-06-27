@@ -22,7 +22,6 @@ class CallListActivity : BaseActivity(), UserInteraction {
     val firestore = FirebaseFirestore.getInstance()
 
     var lsUserData = mutableListOf<UserModel>()
-    var isCallStatus: Boolean = false
 
     @SuppressLint("ImplicitSamInstance")
     override fun onCreate(savedInstanceState: Bundle?) {

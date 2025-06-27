@@ -16,7 +16,7 @@ class WebRTCApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        preferences = getSharedPreferences("com.example.firebasewebrtc", Context.MODE_PRIVATE)
+        preferences = getSharedPreferences("com.example.firebasewebrtc", MODE_PRIVATE)
     }
 
     companion object {

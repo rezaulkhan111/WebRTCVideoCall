@@ -123,7 +123,17 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(eglBase.eglBaseContext, true, true))
             .createPeerConnectionFactory()
 
-        val audioSource = peerConnectionFactory.createAudioSource(MediaConstraints())
+        val audioConstraints = MediaConstraints().apply {
+            // Mandatory constraints for echo cancellation and noise suppression
+            mandatory.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
+            mandatory.add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+            // Optional constraints (adjust as needed)
+            optional.add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
+            optional.add(MediaConstraints.KeyValuePair("googTypingDetection", "true"))
+            optional.add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+        }
+
+        val audioSource = peerConnectionFactory.createAudioSource(audioConstraints)
         val localAudioTrack = peerConnectionFactory.createAudioTrack("101", audioSource).apply {
             setEnabled(true)
         }
@@ -151,7 +161,7 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
         )
 
         val localMedia = addLocalMedia(
-            peerConnectionFactory, peerConnection, this, eglBase.eglBaseContext
+            peerConnectionFactory, this, eglBase.eglBaseContext
         )
 
         localVideoTrack = localMedia.videoTrack

@@ -20,10 +20,6 @@ class IncomingCallActivity : AppCompatActivity() {
 
         callerId = intent.getStringExtra("callerId") ?: ""
         callId = intent.getStringExtra("callId") ?: ""
-//        if (callId.isEmpty()) {
-//            Toast.makeText(this, "Caller ID not found", Toast.LENGTH_SHORT).show()
-//            finish()
-//        }
 
         val tvIncomingFrom: TextView = findViewById<TextView>(R.id.tvIncomingFrom)
         val btnAccept: Button = findViewById<Button>(R.id.btnAccept)
@@ -33,7 +29,6 @@ class IncomingCallActivity : AppCompatActivity() {
 
         btnAccept.setOnClickListener {
             val intent = Intent(this, ReceivedCallActivity::class.java)
-//            intent.putExtra("callerIdData", callerId)
             intent.putExtra("callId", callId)
             intent.putExtra("isCaller", false) // Not the caller
             startActivity(intent)
@@ -41,7 +36,7 @@ class IncomingCallActivity : AppCompatActivity() {
         }
 
         btnReject.setOnClickListener {
-            finish() // Just close the screen
+            finish()
         }
     }
 }
