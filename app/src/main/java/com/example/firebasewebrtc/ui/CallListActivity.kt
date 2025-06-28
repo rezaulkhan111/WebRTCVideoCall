@@ -1,4 +1,4 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -6,13 +6,21 @@ import android.os.Bundle
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.firebasewebrtc.AppConstants
+import com.example.firebasewebrtc.BaseActivity
+import com.example.firebasewebrtc.IApiService
+import com.example.firebasewebrtc.NotificationRequest
+import com.example.firebasewebrtc.RetrofitClientInstance
+import com.example.firebasewebrtc.SharedPreferenceUtil
+import com.example.firebasewebrtc.UserAdapter
+import com.example.firebasewebrtc.UserInteraction
+import com.example.firebasewebrtc.UserModel
 import com.example.firebasewebrtc.databinding.ActivityCallListBinding
+import com.example.firebasewebrtc.ui2.CallActivity
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.gson.Gson
-import org.webrtc.MediaConstraints
-import org.webrtc.PeerConnection
-import org.webrtc.SessionDescription
+import retrofit2.Call
 import retrofit2.Callback
+import retrofit2.Response
 
 class CallListActivity : BaseActivity(), UserInteraction {
 
@@ -59,7 +67,7 @@ class CallListActivity : BaseActivity(), UserInteraction {
     override fun onClickCall(workingArea: UserModel) {
         if (!workingArea.calleeId.isNullOrEmpty()) {
 //            fetchNotification(workingArea.calleeId.toString())
-            startActivity(Intent(this, SendCallActivity::class.java).apply {
+            startActivity(Intent(this, CallActivity::class.java).apply {
                 putExtra("callId", workingArea.calleeId.toString())
                 putExtra("isCaller", true)
             })
@@ -82,8 +90,8 @@ class CallListActivity : BaseActivity(), UserInteraction {
         call!!.enqueue(object : Callback<NotificationRequest?> {
             @SuppressLint("NewApi", "SetTextI18n")
             override fun onResponse(
-                call: retrofit2.Call<NotificationRequest?>,
-                response: retrofit2.Response<NotificationRequest?>
+                call: Call<NotificationRequest?>,
+                response: Response<NotificationRequest?>
             ) {
                 if (response.isSuccessful) {
                     startActivity(
@@ -98,7 +106,7 @@ class CallListActivity : BaseActivity(), UserInteraction {
                 }
             }
 
-            override fun onFailure(call: retrofit2.Call<NotificationRequest?>, t: Throwable) {
+            override fun onFailure(call: Call<NotificationRequest?>, t: Throwable) {
                 Log.e("CallActivity", "else: " + t.message)
             }
         })

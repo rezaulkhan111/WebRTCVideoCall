@@ -1,26 +1,20 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.ui
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.app.ProgressDialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.gson.Gson
-import okhttp3.Call
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
-import org.json.JSONObject
+import com.example.firebasewebrtc.BaseActivity
+import com.example.firebasewebrtc.FirebaseSignalingClient
+import com.example.firebasewebrtc.R
+import com.example.firebasewebrtc.SignalingListener
+import com.example.firebasewebrtc.SimpleSdpObserver
+import com.example.firebasewebrtc.addLocalMedia
+import com.example.firebasewebrtc.createPeerConnection
 import org.webrtc.AudioTrack
 import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
@@ -32,15 +26,13 @@ import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RtpTransceiver
+import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import org.webrtc.VideoCapturer
 import org.webrtc.VideoTrack
-import retrofit2.Callback
-import java.io.IOException
-import kotlin.toString
 
-class SendCallActivity : BaseActivity(), PeerConnection.Observer {
+class ReceivedCallActivity : BaseActivity(), PeerConnection.Observer {
     private lateinit var localView: SurfaceViewRenderer
     private lateinit var remoteView: SurfaceViewRenderer
     private lateinit var peerConnectionFactory: PeerConnectionFactory
@@ -61,9 +53,13 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
     )
     private val PERMISSION_REQUEST_CODE = 1
 
+    val iceServers = listOf(
+        PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_video_call)
+        setContentView(R.layout.activity_received_call)
 
         localView = findViewById<SurfaceViewRenderer>(R.id.localView)
         remoteView = findViewById<SurfaceViewRenderer>(R.id.remoteView)
@@ -72,6 +68,7 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
         localIsCaller = intent.getBooleanExtra("isCaller", true)
 
         if (!callOrSessionId.isNullOrEmpty()) {
+            Log.e("RCallActivity", "callOrSessionId: " + callOrSessionId)
             requestPermissionsIfNeeded()
         }
     }
@@ -140,9 +137,25 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
 
         mSignalingClient = FirebaseSignalingClient(callOrSessionId, object : SignalingListener {
             override fun onRemoteSessionReceived(session: SessionDescription) {
-                if (session.type == SessionDescription.Type.ANSWER) {
-                    peerConnection.setRemoteDescription(SimpleSdpObserver(), session)
-                    Log.d("Caller", "Remote ANSWER set")
+                peerConnection.setRemoteDescription(SimpleSdpObserver(), session)
+
+                if (session.type == SessionDescription.Type.OFFER) {
+                    peerConnection.createAnswer(object : SdpObserver {
+
+                        override fun onCreateSuccess(answer: SessionDescription) {
+                            peerConnection.setLocalDescription(SimpleSdpObserver(), answer)
+                            mSignalingClient.sendAnswer(answer)
+                        }
+
+                        override fun onSetSuccess() {}
+                        override fun onCreateFailure(error: String) {
+                            Log.e("ReceivedCall", "Answer creation failed: $error")
+                        }
+
+                        override fun onSetFailure(error: String) {
+                            Log.e("ReceivedCall", "Set local description failed: $error")
+                        }
+                    }, MediaConstraints())
                 }
             }
 
@@ -170,8 +183,6 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
         peerConnection.addTrack(localVideoTrack, listOf("ARDAMS"))
         peerConnection.addTrack(localAudioTrack, listOf("ARDAMS"))
 
-        fetchNotification(callOrSessionId = callOrSessionId, peerConnection)
-
         localVideoTrack.addSink(localView)
 
         // 5. End Call Button
@@ -187,7 +198,6 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
             videoCapturer.stopCapture()
             localView.release()
             remoteView.release()
-
             finish()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -259,50 +269,5 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
         localView.release()
         remoteView.release()
         peerConnectionFactory.dispose()
-    }
-
-    fun fetchNotification(
-        callOrSessionId: String, peerConnection: PeerConnection
-    ) {
-        val dateService =
-            RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
-        val call = dateService?.requestNotification(
-            NotificationRequest(
-                calleeId = callOrSessionId,
-                title = "📞 Incoming Call",
-                body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
-                callId = callOrSessionId
-            )
-        )
-        call!!.enqueue(object : Callback<NotificationRequest?> {
-            @SuppressLint("NewApi", "SetTextI18n")
-            override fun onResponse(
-                call: retrofit2.Call<NotificationRequest?>,
-                response: retrofit2.Response<NotificationRequest?>
-            ) {
-                if (response.isSuccessful) {
-
-                    peerConnection.createOffer(object : SimpleSdpObserver() {
-                        override fun onCreateSuccess(sessionDescription: SessionDescription?) {
-                            sessionDescription?.let {
-                                peerConnection.setLocalDescription(SimpleSdpObserver(), it)
-
-                                mSignalingClient.sendOffer(
-                                    it,
-                                    tergateBUserCallId = callOrSessionId,
-                                    SharedPreferenceUtil.getFCMCallerId()
-                                )
-                            }
-                        }
-                    }, MediaConstraints())
-                } else {
-                    Log.e("CallActivity", "else")
-                }
-            }
-
-            override fun onFailure(call: retrofit2.Call<NotificationRequest?>, t: Throwable) {
-                Log.e("CallActivity", "else: " + t.message)
-            }
-        })
     }
 }

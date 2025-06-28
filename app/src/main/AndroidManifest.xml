@@ -25,10 +25,13 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".ReceivedCallActivity"
+            android:name=".ui2.CallActivity"
             android:exported="false" />
         <activity
-            android:name=".CallListActivity"
+            android:name=".ui.ReceivedCallActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.CallListActivity"
             android:exported="false" />
         <activity
             android:name=".RegistrationActivity"
@@ -40,12 +43,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".IncomingCallActivity"
-            android:exported="false"
+            android:name=".ui.IncomingCallActivity"
+            android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity="" />
         <activity
-            android:name=".SendCallActivity"
+            android:name=".ui.SendCallActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

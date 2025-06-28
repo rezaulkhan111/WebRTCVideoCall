@@ -1,12 +1,13 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.firebasewebrtc.R
+import com.example.firebasewebrtc.ui.ReceivedCallActivity
 
 class IncomingCallActivity : AppCompatActivity() {
 
