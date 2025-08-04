@@ -25,8 +25,7 @@ import org.webrtc.VideoSource
 import org.webrtc.VideoTrack
 
 class WebRtcManager(
-    private val contextRef: Context,
-    private val eventListener: WebRtcEventListener
+    private val contextRef: Context, private val eventListener: WebRtcEventListener
 ) {
     private lateinit var peerConnectionFactory: PeerConnectionFactory
     private var peerConnection: PeerConnection? = null
@@ -45,18 +44,18 @@ class WebRtcManager(
                 .createInitializationOptions()
         )
 
-        val options = PeerConnectionFactory.Options()
-        val encoderFactory = DefaultVideoEncoderFactory(eglBaseRef.eglBaseContext, true, true)
-        val decoderFactory = DefaultVideoDecoderFactory(eglBaseRef.eglBaseContext)
-
-        peerConnectionFactory = PeerConnectionFactory.builder().setOptions(options)
-            .setVideoEncoderFactory(encoderFactory).setVideoDecoderFactory(decoderFactory)
-            .createPeerConnectionFactory()
+        peerConnectionFactory = PeerConnectionFactory.builder()
+            .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBaseRef.eglBaseContext))
+            .setVideoEncoderFactory(
+                DefaultVideoEncoderFactory(
+                    eglBaseRef.eglBaseContext, true, true
+                )
+            ).createPeerConnectionFactory()
     }
 
-    fun initLocalStream(surfaceRenderer: SurfaceViewRenderer) {
-        surfaceRenderer.init(eglBaseRef.eglBaseContext, null)
-        surfaceRenderer.setZOrderMediaOverlay(true)
+    fun initLocalStream(localView: SurfaceViewRenderer) {
+        localView.init(eglBaseRef.eglBaseContext, null)
+        localView.setZOrderMediaOverlay(true)
 
         videoCapturer = createCameraCapturer()
         videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast)
@@ -65,19 +64,26 @@ class WebRtcManager(
             contextRef,
             videoSource?.capturerObserver
         )
-        videoCapturer.startCapture(640, 480, 30)
+        videoCapturer.startCapture(1280, 720, 30)
 
-        localVideoTrack = peerConnectionFactory.createVideoTrack("LOCAL_VIDEO", videoSource)
-        localVideoTrack?.addSink(surfaceRenderer)
+        localVideoTrack = peerConnectionFactory.createVideoTrack("LOCAL_VIDEO_TRACK", videoSource)
+        localVideoTrack?.addSink(localView)
 
-        audioSource = peerConnectionFactory.createAudioSource(MediaConstraints())
-        localAudioTrack = peerConnectionFactory.createAudioTrack("LOCAL_AUDIO", audioSource)
+        val constraints = MediaConstraints().apply {
+            mandatory.apply {
+                add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
+                add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+            }
+            optional.apply {
+                add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
+                add(MediaConstraints.KeyValuePair("googTypingDetection", "true"))
+                add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+            }
+        }
+        localAudioTrack = peerConnectionFactory.createAudioTrack(
+            "101", peerConnectionFactory.createAudioSource(constraints)
+        )
     }
-
-    fun getLocalTracks(): List<MediaStreamTrack> {
-        return listOfNotNull(localVideoTrack, localAudioTrack)
-    }
-
 
     fun createPeerConnection() {
         val iceServers = listOf(
@@ -119,16 +125,24 @@ class WebRtcManager(
                 override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
             })
 
-        val stream = peerConnectionFactory.createLocalMediaStream("LOCAL_STREAM")
-        localAudioTrack?.let { stream.addTrack(it) }
-        localVideoTrack?.let { stream.addTrack(it) }
-        peerConnection?.addStream(stream)
+        peerConnection?.apply {
+            localAudioTrack?.let { addTrack(it, listOf("ARDAMS")) }
+            localVideoTrack?.let { addTrack(it, listOf("ARDAMS")) }
+        }
+//        peerConnection?.addStream(stream)
     }
 
     fun createOffer(callback: (SessionDescription) -> Unit) {
         val constraints = MediaConstraints().apply {
-            mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
-            mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"))
+            mandatory.apply {
+                add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
+                add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+            }
+            optional.apply {
+                add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
+                add(MediaConstraints.KeyValuePair("googTypingDetection", "true"))
+                add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+            }
         }
 
         peerConnection?.createOffer(object : SimpleSdpObserver() {
@@ -142,6 +156,18 @@ class WebRtcManager(
     }
 
     fun createAnswer(callback: (SessionDescription) -> Unit) {
+//        val constraints = MediaConstraints().apply {
+//            mandatory.apply {
+//                add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
+//                add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+//            }
+//            optional.apply {
+//                add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
+//                add(MediaConstraints.KeyValuePair("googTypingDetection", "true"))
+//                add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+//            }
+//        }
+
         val constraints = MediaConstraints()
         peerConnection?.createAnswer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(desc: SessionDescription?) {
@@ -164,8 +190,14 @@ class WebRtcManager(
     fun close() {
         try {
             peerConnection?.close()
-            videoCapturer.stopCapture()
-            videoCapturer.dispose()
+            if (::videoCapturer.isInitialized) {
+                try {
+                    videoCapturer.stopCapture()
+                } catch (e: Exception) {
+                    Log.e("WebRtcManager", "Error stopping capture: ${e.message}")
+                }
+                videoCapturer.dispose()
+            }
             videoSource?.dispose()
             audioSource?.dispose()
             localVideoTrack?.dispose()

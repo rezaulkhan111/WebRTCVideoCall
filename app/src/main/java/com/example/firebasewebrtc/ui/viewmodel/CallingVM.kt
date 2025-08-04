@@ -13,6 +13,7 @@ import com.example.firebasewebrtc.SharedPreferenceUtil
 import com.example.firebasewebrtc.SignalingListener
 import com.example.firebasewebrtc.data.WebRtcEventListener
 import com.example.firebasewebrtc.data.WebRtcManager
+import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,30 +34,28 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     lateinit var webRtcManager: WebRtcManager
     private var signalingClient: FirebaseSignalingClient? = null
 
-    fun initCall(sessionId: String) {
-        webRtcManager = WebRtcManager(
-            getApplication(),
-            eventListener = this
-        )
+    fun initCallSend(
+        sessionId: String,
+        svrLocalView: SurfaceViewRenderer,
+        isCaller: Boolean = false
+    ) {
+        webRtcManager = WebRtcManager(getApplication(), eventListener = this)
         webRtcManager.initPeerConnectionFactory()
+        webRtcManager.initLocalStream(svrLocalView)
         webRtcManager.createPeerConnection()
 
         signalingClient = FirebaseSignalingClient(
             callOrSessionId = sessionId, listener = this
         )
 
-//        webRtcManager.createOffer { offer ->
-//            signalingClient?.sendOffer(
-//                offer,
-//                tergateBUserCallId = sessionId,
-//                mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
-//            )
-//        }
-        fetchNotification(sessionId)
+        if (isCaller) {
+            fetchNotification(sessionId)
+        }
     }
 
-    fun initLocalRenderer(surfaceRenderer: SurfaceViewRenderer) {
-        webRtcManager.initLocalStream(surfaceRenderer)
+    fun initLocalRenderer(svrRemoteView: SurfaceViewRenderer) {
+        webRtcManager.initLocalStream(svrRemoteView)
+//        webRtcManager.createPeerConnection()
     }
 
     fun setRemoteRenderer(surfaceRenderer: SurfaceViewRenderer) {
@@ -65,10 +64,13 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     }
 
     override fun onRemoteSessionReceived(session: SessionDescription) {
+        Log.d("CALLING_VM", "Remote session received: ${session.type}")
         webRtcManager.setRemoteDescription(session)
         if (session.type == SessionDescription.Type.OFFER) {
+            _callStatus.value = "Incoming Call"
             webRtcManager.createAnswer { answer ->
                 signalingClient?.sendAnswer(answer)
+                _callStatus.value = "Answered"
             }
         }
     }
@@ -105,14 +107,23 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     fun startCallTimeout(durationMs: Long = 30000, onTimeout: () -> Unit) {
         viewModelScope.launch {
             delay(durationMs)
-            onTimeout()
+
+            // Only timeout if call hasn't connected
+            if (_callStatus.value != "Call Connected" && _callStatus.value != "Answered") {
+                _callStatus.value = "Call Ended"
+                onTimeout()
+            }
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        webRtcManager.close()
-        signalingClient?.release()
+        try {
+            webRtcManager.close()
+            signalingClient?.release()
+        } catch (e: Exception) {
+            Log.e("CallingVM", "Cleanup failed: ${e.message}")
+        }
     }
 
     fun cleanupCallSession() {
@@ -121,8 +132,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
         webRtcManager.close()
     }
 
-
-    fun fetchNotification(
+    private fun fetchNotification(
         callOrSessionId: String
     ) {
         val dateService =
@@ -142,6 +152,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
             ) {
                 if (response.isSuccessful) {
                     webRtcManager.createOffer { offer ->
+                        Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
                         signalingClient?.sendOffer(
                             offer,
                             tergateBUserCallId = callOrSessionId,

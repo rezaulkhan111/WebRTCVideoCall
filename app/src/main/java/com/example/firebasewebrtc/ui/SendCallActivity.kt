@@ -112,8 +112,10 @@ class SendCallActivity : BaseActivity(), PeerConnection.Observer {
         localView.setZOrderMediaOverlay(true)
 
         val options =
-            PeerConnectionFactory.InitializationOptions.builder(this).setEnableInternalTracer(true)
-                .setFieldTrials("WebRTC-IntelVP8/Enabled/").createInitializationOptions()
+            PeerConnectionFactory.InitializationOptions.builder(this)
+                .setEnableInternalTracer(true)
+                .setFieldTrials("WebRTC-IntelVP8/Enabled/")
+                .createInitializationOptions()
 
         PeerConnectionFactory.initialize(options)
 

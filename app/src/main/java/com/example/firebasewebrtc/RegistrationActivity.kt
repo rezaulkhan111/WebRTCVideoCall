@@ -8,6 +8,7 @@ import com.example.firebasewebrtc.databinding.ActivityRegistrationBinding
 import com.example.firebasewebrtc.ui.CallListActivity
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.gson.Gson
 
 class RegistrationActivity : AppCompatActivity() {
 
@@ -29,7 +30,11 @@ class RegistrationActivity : AppCompatActivity() {
                 btnSignUp.setOnClickListener {
                     val localCalleeId = tietNumberInput.text.toString()
 
-                    if (!localCalleeId.isNullOrEmpty()) {
+                    if (localCalleeId.isNotEmpty()) {
+                        Log.e(
+                            "RegistratAc",
+                            "localCalleeId: " + localCalleeId
+                        )
                         firestore.collection(AppConstants.FCM_collection).document(localCalleeId)
                             .get().addOnSuccessListener { document ->
                                 if (document.exists()) {
@@ -73,8 +78,6 @@ class RegistrationActivity : AppCompatActivity() {
 
             firestore.collection(AppConstants.FCM_collection).document(calleeId).set(userData)
                 .addOnSuccessListener {
-
-
                     startActivity(Intent(this@RegistrationActivity, CallListActivity::class.java))
                     finish()
                 }.addOnFailureListener {

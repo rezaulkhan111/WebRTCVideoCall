@@ -73,42 +73,4 @@ class CallListActivity : BaseActivity(), UserInteraction {
             })
         }
     }
-
-    fun fetchNotification(
-        callOrSessionId: String
-    ) {
-        val dateService =
-            RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
-        val call = dateService?.requestNotification(
-            NotificationRequest(
-                calleeId = callOrSessionId,
-                title = "📞 Incoming Call",
-                body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
-                callId = callOrSessionId
-            )
-        )
-        call!!.enqueue(object : Callback<NotificationRequest?> {
-            @SuppressLint("NewApi", "SetTextI18n")
-            override fun onResponse(
-                call: Call<NotificationRequest?>,
-                response: Response<NotificationRequest?>
-            ) {
-                if (response.isSuccessful) {
-                    startActivity(
-                        Intent(
-                            this@CallListActivity, SendCallActivity::class.java
-                        ).apply {
-                            putExtra("callId", callOrSessionId)
-                            putExtra("isCaller", true)
-                        })
-                } else {
-                    Log.e("CallActivity", "else")
-                }
-            }
-
-            override fun onFailure(call: Call<NotificationRequest?>, t: Throwable) {
-                Log.e("CallActivity", "else: " + t.message)
-            }
-        })
-    }
 }

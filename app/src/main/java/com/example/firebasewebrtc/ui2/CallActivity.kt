@@ -1,16 +1,22 @@
 package com.example.firebasewebrtc.ui2
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.firebasewebrtc.BaseActivity
 import com.example.firebasewebrtc.databinding.ActivityCallBinding
 import com.example.firebasewebrtc.ui.viewmodel.CallingVM
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.webrtc.SurfaceViewRenderer
 
 class CallActivity : BaseActivity() {
-
     private lateinit var binding: ActivityCallBinding
     private val callViewModel: CallingVM by viewModels()
     private lateinit var sessionId: String
@@ -23,23 +29,31 @@ class CallActivity : BaseActivity() {
 
         sessionId = intent.getStringExtra("callId").toString()
 
-        if (!sessionId.isNullOrEmpty()) {
+        if (sessionId.isNotEmpty()) {
             setupVideoViews(
-                binding.localView,
-                binding.remoteView
+                binding.localView, binding.remoteView
             )
 
             requestPermissionsIfNeeded {
-                callViewModel.initCall(sessionId)
-                callViewModel.initLocalRenderer(binding.localView)
+                callViewModel.initCallSend(sessionId, binding.localView, true)
+
+//                callViewModel.initLocalRenderer(binding.localView)
                 callViewModel.setRemoteRenderer(binding.remoteView)
+
+                callViewModel.startCallTimeout {
+                    if (!hasEnded) {
+                        runOnUiThread {
+                            Toast.makeText(this, "Call timed out", Toast.LENGTH_SHORT).show()
+                            callViewModel.endCall()
+                            finish()
+                        }
+                    }
+                }
             }
 
-            // Observe call status
             observeCallStatus()
         }
 
-        // End call button
         binding.endCallBtn.setOnClickListener {
             callViewModel.endCall()
             finish()
@@ -47,8 +61,7 @@ class CallActivity : BaseActivity() {
     }
 
     private fun setupVideoViews(
-        localView: SurfaceViewRenderer,
-        remoteView: SurfaceViewRenderer
+        localView: SurfaceViewRenderer, remoteView: SurfaceViewRenderer
     ) {
         localView.setZOrderMediaOverlay(true)
         localView.setMirror(true)
@@ -56,14 +69,31 @@ class CallActivity : BaseActivity() {
     }
 
     private fun observeCallStatus() {
-        lifecycleScope.launchWhenStarted {
-            callViewModel.callStatus.collectLatest { status ->
-                binding.callStatusText.text = status
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                callViewModel.callStatus.collectLatest { status ->
+                    Log.e("CALL_ACTIVITY", "Call status: $status")
 
-                // Auto finish activity on call end
-                if (status == "Call Ended") {
-                    hasEnded = true
-                    finish()
+                    binding.callStatusText.text = status
+
+                    when (status) {
+                        "Call Ended" -> {
+                            if (!hasEnded) {
+                                hasEnded = true
+                                Handler(Looper.getMainLooper()).postDelayed({
+                                    finish()
+                                }, 15000) // wait 1 second before closing
+                            }
+                        }
+
+                        "Initializing" -> {
+                            // Optional: show loading
+                        }
+
+                        "Incoming Call", "Answered", "Call Connected" -> {
+                            // Keep the screen active
+                        }
+                    }
                 }
             }
         }
@@ -72,6 +102,5 @@ class CallActivity : BaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
         callViewModel.cleanupCallSession()
-        callViewModel.endCall()
     }
 }
