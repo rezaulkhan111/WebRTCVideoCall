@@ -3,7 +3,6 @@ package com.example.firebasewebrtc
 object AppConstants {
     const val FCM_collection = "calls"
 
-
     const val FCM_COLLECTION = "webrtc_users" // Your Firebase collection name for users
     const val VIDEO_TRACK_ID = "LOCAL_VIDEO_TRACK"
     const val AUDIO_TRACK_ID = "LOCAL_AUDIO_TRACK"

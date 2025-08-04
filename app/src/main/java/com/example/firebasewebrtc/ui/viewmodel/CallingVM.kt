@@ -35,9 +35,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     private var signalingClient: FirebaseSignalingClient? = null
 
     fun initCallSend(
-        sessionId: String,
-        svrLocalView: SurfaceViewRenderer,
-        isCaller: Boolean = false
+        sessionId: String, svrLocalView: SurfaceViewRenderer, isCaller: Boolean = false
     ) {
         webRtcManager = WebRtcManager(getApplication(), eventListener = this)
         webRtcManager.initPeerConnectionFactory()
@@ -132,7 +130,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
         webRtcManager.close()
     }
 
-    private fun fetchNotification(
+    fun fetchNotification(
         callOrSessionId: String
     ) {
         val dateService =
@@ -151,13 +149,15 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                 call: Call<NotificationRequest?>, response: Response<NotificationRequest?>
             ) {
                 if (response.isSuccessful) {
-                    webRtcManager.createOffer { offer ->
-                        Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
-                        signalingClient?.sendOffer(
-                            offer,
-                            tergateBUserCallId = callOrSessionId,
-                            mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
-                        )
+                    if (webRtcManager != null) {
+                        webRtcManager.createOffer { offer ->
+                            Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
+                            signalingClient?.sendOffer(
+                                offer,
+                                tergateBUserCallId = callOrSessionId,
+                                mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
+                            )
+                        }
                     }
                 } else {
                     Log.e("CallActivity", "else")

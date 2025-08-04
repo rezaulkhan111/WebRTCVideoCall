@@ -8,7 +8,6 @@ import com.example.firebasewebrtc.databinding.ActivityRegistrationBinding
 import com.example.firebasewebrtc.ui.CallListActivity
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.gson.Gson
 
 class RegistrationActivity : AppCompatActivity() {
 

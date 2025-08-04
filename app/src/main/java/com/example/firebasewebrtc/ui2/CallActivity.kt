@@ -42,11 +42,11 @@ class CallActivity : BaseActivity() {
 
                 callViewModel.startCallTimeout {
                     if (!hasEnded) {
-                        runOnUiThread {
-                            Toast.makeText(this, "Call timed out", Toast.LENGTH_SHORT).show()
-                            callViewModel.endCall()
-                            finish()
-                        }
+//                        runOnUiThread {
+//                            Toast.makeText(this, "Call timed out", Toast.LENGTH_SHORT).show()
+//                            callViewModel.endCall()
+//                            finish()
+//                        }
                     }
                 }
             }
