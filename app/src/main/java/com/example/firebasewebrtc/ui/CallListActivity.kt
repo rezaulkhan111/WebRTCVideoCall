@@ -28,7 +28,6 @@ class CallListActivity : BaseActivity(), UserInteraction {
 
     private lateinit var binding: ActivityCallListBinding
     private lateinit var adapterUser: UserAdapter
-    private val callViewModel: CallingVM by viewModels()
 
     val firestore = FirebaseFirestore.getInstance()
 
@@ -73,8 +72,6 @@ class CallListActivity : BaseActivity(), UserInteraction {
                 putExtra("callId", workingArea.calleeId)
                 putExtra("isCaller", true)
             })
-//            callViewModel.fetchNotification(workingArea.calleeId)
         }
-
     }
 }

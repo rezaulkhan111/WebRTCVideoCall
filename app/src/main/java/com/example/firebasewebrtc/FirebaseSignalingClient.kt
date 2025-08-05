@@ -105,7 +105,7 @@ class FirebaseSignalingClient(
     }
 
     fun sendCallEnded() {
-        callDoc.set(mapOf("type" to "callEnd", "sdp" to null), SetOptions.merge())
+        callDoc.set(mapOf("type" to null, "sdp" to null), SetOptions.merge())
     }
 
     fun release() {

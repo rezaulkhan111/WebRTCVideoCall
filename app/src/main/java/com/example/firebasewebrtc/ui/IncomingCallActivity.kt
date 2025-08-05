@@ -22,9 +22,9 @@ class IncomingCallActivity : AppCompatActivity() {
         callerId = intent.getStringExtra("callerId") ?: ""
         callId = intent.getStringExtra("callId") ?: ""
 
-        val tvIncomingFrom: TextView = findViewById<TextView>(R.id.tvIncomingFrom)
-        val btnAccept: Button = findViewById<Button>(R.id.btnAccept)
-        val btnReject: Button = findViewById<Button>(R.id.btnReject)
+        val tvIncomingFrom: TextView = findViewById(R.id.tvIncomingFrom)
+        val btnAccept: Button = findViewById(R.id.btnAccept)
+        val btnReject: Button = findViewById(R.id.btnReject)
 
         tvIncomingFrom.text = "Incoming call from: $callerId"
 
