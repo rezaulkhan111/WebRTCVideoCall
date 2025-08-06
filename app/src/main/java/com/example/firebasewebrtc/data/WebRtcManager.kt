@@ -1,8 +1,10 @@
 package com.example.firebasewebrtc.data
 
 import android.content.Context
+import android.media.AudioManager
 import android.util.Log
 import com.example.firebasewebrtc.SimpleSdpObserver
+import com.example.firebasewebrtc.VideoService
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.Camera2Enumerator
@@ -13,7 +15,6 @@ import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
-import org.webrtc.MediaStreamTrack
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RtpReceiver
@@ -25,17 +26,22 @@ import org.webrtc.VideoSource
 import org.webrtc.VideoTrack
 
 class WebRtcManager(
-    private val contextRef: Context, private val eventListener: WebRtcEventListener
+    private val contextRef: Context,
+    private val eventListener: WebRtcEventListener,
+    private val isAudioCallOnly: Boolean = false
 ) {
-    private lateinit var peerConnectionFactory: PeerConnectionFactory
-    private var peerConnection: PeerConnection? = null
+    private lateinit var mPeerConnectionFactory: PeerConnectionFactory
+    private var mPeerConnection: PeerConnection? = null
 
-    private lateinit var videoCapturer: VideoCapturer
-    private var videoSource: VideoSource? = null
-    private var localVideoTrack: VideoTrack? = null
-    private var audioSource: AudioSource? = null
-    private var localAudioTrack: AudioTrack? = null
-    val eglBaseRef: EglBase = EglBase.create()
+    private var mRemoteView: SurfaceViewRenderer? = null
+    private var mLocalView: SurfaceViewRenderer? = null
+    private lateinit var mVideoCapturer: VideoCapturer
+
+    private var mVideoSource: VideoSource? = null
+    private var mLocalVideoTrack: VideoTrack? = null
+    private var mAudioSource: AudioSource? = null
+    private var mLocalAudioTrack: AudioTrack? = null
+    private var mEglBaseRef: EglBase = EglBase.create()
 
     fun initPeerConnectionFactory() {
         PeerConnectionFactory.initialize(
@@ -44,35 +50,50 @@ class WebRtcManager(
                 .createInitializationOptions()
         )
 
-        peerConnectionFactory = PeerConnectionFactory.builder()
-            .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBaseRef.eglBaseContext))
+        mPeerConnectionFactory = PeerConnectionFactory.builder()
+            .setVideoDecoderFactory(DefaultVideoDecoderFactory(mEglBaseRef.eglBaseContext))
             .setVideoEncoderFactory(
                 DefaultVideoEncoderFactory(
-                    eglBaseRef.eglBaseContext, true, true
+                    mEglBaseRef.eglBaseContext, true, true
                 )
             ).createPeerConnectionFactory()
     }
 
     fun initLocalStream(localView: SurfaceViewRenderer) {
-        localView.init(eglBaseRef.eglBaseContext, null)
-        localView.setZOrderMediaOverlay(true)
+        if (isAudioCallOnly) {
+            mLocalView = localView
 
-        videoCapturer = createCameraCapturer()
-        videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast)
-        videoCapturer.initialize(
-            SurfaceTextureHelper.create("CaptureThread", eglBaseRef.eglBaseContext),
-            contextRef,
-            videoSource?.capturerObserver
-        )
-        videoCapturer.startCapture(1280, 720, 30)
+            localView.init(mEglBaseRef.eglBaseContext, null)
+            localView.setZOrderMediaOverlay(true)
 
-        localVideoTrack = peerConnectionFactory.createVideoTrack("LOCAL_VIDEO_TRACK", videoSource)
-        localVideoTrack?.addSink(localView)
+            val audioManager = contextRef.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.apply {
+                mode = AudioManager.MODE_IN_COMMUNICATION
+                isSpeakerphoneOn = true // or false for earpiece
+                isMicrophoneMute = false
+            }
 
-        val constraints = MediaConstraints().apply {
+            mVideoCapturer = createCameraCapturer()
+            mVideoSource = mPeerConnectionFactory.createVideoSource(mVideoCapturer.isScreencast)
+            mVideoCapturer.initialize(
+                SurfaceTextureHelper.create("CaptureThread", mEglBaseRef.eglBaseContext),
+                contextRef,
+                mVideoSource?.capturerObserver
+            )
+            mVideoCapturer.startCapture(1280, 720, 30)
+
+            mLocalVideoTrack = mPeerConnectionFactory.createVideoTrack(
+                VideoService.LOCAL_AUDIO_TRACK.name, mVideoSource
+            )
+            mLocalVideoTrack?.addSink(localView)
+        }
+
+        val audioConstraints = MediaConstraints().apply {
             mandatory.apply {
                 add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
                 add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+                add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+                add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
             }
             optional.apply {
                 add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
@@ -80,9 +101,16 @@ class WebRtcManager(
                 add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
             }
         }
-        localAudioTrack = peerConnectionFactory.createAudioTrack(
-            "101", peerConnectionFactory.createAudioSource(constraints)
+        mLocalAudioTrack = mPeerConnectionFactory.createAudioTrack(
+            "101", mPeerConnectionFactory.createAudioSource(audioConstraints)
         )
+    }
+
+    fun setRemoteView(view: SurfaceViewRenderer) {
+        mRemoteView = view
+        mRemoteView?.init(mEglBaseRef.eglBaseContext, null)
+        mRemoteView?.setZOrderMediaOverlay(true)
+        mRemoteView?.setEnableHardwareScaler(true)
     }
 
     fun createPeerConnection() {
@@ -92,8 +120,8 @@ class WebRtcManager(
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers)
         rtcConfig.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
 
-        peerConnection =
-            peerConnectionFactory.createPeerConnection(rtcConfig, object : PeerConnection.Observer {
+        mPeerConnection = mPeerConnectionFactory.createPeerConnection(
+            rtcConfig, object : PeerConnection.Observer {
                 override fun onIceCandidate(candidate: IceCandidate) {
                     eventListener.onIceCandidate(candidate)
                 }
@@ -117,6 +145,9 @@ class WebRtcManager(
                     val track = receiver.track()
                     if (track is VideoTrack) {
 //                        track.addSink(remoteView)
+                        mRemoteView?.let {
+                            track.addSink(it)
+                        }
                     }
                 }
 
@@ -125,9 +156,9 @@ class WebRtcManager(
                 override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
             })
 
-        peerConnection?.apply {
-            localAudioTrack?.let { addTrack(it, listOf("ARDAMS")) }
-            localVideoTrack?.let { addTrack(it, listOf("ARDAMS")) }
+        mPeerConnection?.apply {
+            mLocalAudioTrack?.let { addTrack(it, listOf("ARDAMS")) }
+            mLocalVideoTrack?.let { addTrack(it, listOf("ARDAMS")) }
         }
 //        peerConnection?.addStream(stream)
     }
@@ -145,10 +176,10 @@ class WebRtcManager(
             }
         }
 
-        peerConnection?.createOffer(object : SimpleSdpObserver() {
+        mPeerConnection?.createOffer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(desc: SessionDescription?) {
                 desc?.let {
-                    peerConnection?.setLocalDescription(SimpleSdpObserver(), it)
+                    mPeerConnection?.setLocalDescription(SimpleSdpObserver(), it)
                     callback(it)
                 }
             }
@@ -156,23 +187,11 @@ class WebRtcManager(
     }
 
     fun createAnswer(callback: (SessionDescription) -> Unit) {
-//        val constraints = MediaConstraints().apply {
-//            mandatory.apply {
-//                add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
-//                add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
-//            }
-//            optional.apply {
-//                add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
-//                add(MediaConstraints.KeyValuePair("googTypingDetection", "true"))
-//                add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
-//            }
-//        }
-
         val constraints = MediaConstraints()
-        peerConnection?.createAnswer(object : SimpleSdpObserver() {
+        mPeerConnection?.createAnswer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(desc: SessionDescription?) {
                 desc?.let {
-                    peerConnection?.setLocalDescription(SimpleSdpObserver(), it)
+                    mPeerConnection?.setLocalDescription(SimpleSdpObserver(), it)
                     callback(it)
                 }
             }
@@ -180,28 +199,47 @@ class WebRtcManager(
     }
 
     fun setRemoteDescription(desc: SessionDescription) {
-        peerConnection?.setRemoteDescription(SimpleSdpObserver(), desc)
+        mPeerConnection?.setRemoteDescription(SimpleSdpObserver(), desc)
     }
 
     fun addIceCandidate(candidate: IceCandidate) {
-        peerConnection?.addIceCandidate(candidate)
+        mPeerConnection?.addIceCandidate(candidate)
     }
 
     fun close() {
         try {
-            peerConnection?.close()
-            if (::videoCapturer.isInitialized) {
+            mPeerConnection?.close()
+            mPeerConnection = null
+
+            mLocalVideoTrack?.removeSink(mLocalView)
+            mLocalVideoTrack?.dispose()
+            mLocalVideoTrack = null
+
+            mLocalAudioTrack?.dispose()
+            mLocalAudioTrack = null
+
+            mVideoCapturer.takeIf { ::mVideoCapturer.isInitialized }?.let {
                 try {
-                    videoCapturer.stopCapture()
+                    it.stopCapture()
                 } catch (e: Exception) {
                     Log.e("WebRtcManager", "Error stopping capture: ${e.message}")
                 }
-                videoCapturer.dispose()
+                it.dispose()
             }
-            videoSource?.dispose()
-            audioSource?.dispose()
-            localVideoTrack?.dispose()
-            localAudioTrack?.dispose()
+
+            mVideoSource?.dispose()
+            mVideoSource = null
+
+            mAudioSource?.dispose()
+            mAudioSource = null
+
+            mLocalView?.release()
+            mRemoteView?.release()
+            mLocalView = null
+            mRemoteView = null
+
+            val audioManager = contextRef.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.mode = AudioManager.MODE_NORMAL
         } catch (e: Exception) {
             Log.e("WebRtcManager", "Error releasing resources: ${e.message}")
         }

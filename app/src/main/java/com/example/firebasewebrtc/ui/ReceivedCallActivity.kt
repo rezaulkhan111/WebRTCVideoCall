@@ -5,6 +5,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.firebasewebrtc.AppConstants
 import com.example.firebasewebrtc.BaseActivity
 import com.example.firebasewebrtc.databinding.ActivityReceivedCallBinding
 import com.example.firebasewebrtc.ui.viewmodel.CallingVM
@@ -17,6 +18,7 @@ class ReceivedCallActivity : BaseActivity() {
     private val callViewModel: CallingVM by viewModels()
     private lateinit var sessionId: String
     private var hasEnded = false
+    private var mAudioVideoCallStatus: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +26,7 @@ class ReceivedCallActivity : BaseActivity() {
         setContentView(binding.root)
 
         sessionId = intent.getStringExtra("callId").toString()
+        mAudioVideoCallStatus = intent.getBooleanExtra(AppConstants.isAudioOrVideo, false)
 
         if (sessionId.isNotEmpty()) {
             setupVideoViews(
@@ -32,9 +35,16 @@ class ReceivedCallActivity : BaseActivity() {
             )
 
             requestPermissionsIfNeeded {
-                callViewModel.initCallSend(sessionId, binding.localView, false)
-//                callViewModel.initLocalRenderer(binding.localView)
-                callViewModel.setRemoteRenderer(binding.remoteView)
+                callViewModel.initCallSend(
+                    sessionId,
+                    binding.localView,
+                    false,
+                    mAudioVideoCallStatus
+                )
+
+                if (mAudioVideoCallStatus) {
+                    callViewModel.setRemoteRenderer(binding.remoteView)
+                }
             }
 
             observeCallStatus()
@@ -47,8 +57,7 @@ class ReceivedCallActivity : BaseActivity() {
     }
 
     private fun setupVideoViews(
-        localView: SurfaceViewRenderer,
-        remoteView: SurfaceViewRenderer
+        localView: SurfaceViewRenderer, remoteView: SurfaceViewRenderer
     ) {
         localView.setZOrderMediaOverlay(true)
         localView.setMirror(true)
@@ -77,6 +86,10 @@ class ReceivedCallActivity : BaseActivity() {
 
                         "Incoming Call", "Answered", "Call Connected" -> {
                             // Keep the screen active
+                        }
+
+                        else -> {
+                            finish()
                         }
                     }
                 }

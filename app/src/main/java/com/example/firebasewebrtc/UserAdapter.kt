@@ -32,8 +32,14 @@ class UserAdapter(
             holder.onBind(workingArea)
 
             holder.apply {
-                itemView.setOnClickListener {
-                    iCallBack.onClickCall(workingArea)
+                binding.apply {
+                    ivAudioCall.setOnClickListener {
+                        iCallBack.onClickAudioCall(workingArea)
+                    }
+
+                    ivVideoCall.setOnClickListener {
+                        iCallBack.onClickVideoCall(workingArea)
+                    }
                 }
             }
         } catch (ignored: Exception) {
@@ -56,5 +62,6 @@ class UserAdapter(
 }
 
 interface UserInteraction {
-    fun onClickCall(workingArea: UserModel)
+    fun onClickAudioCall(workingArea: UserModel)
+    fun onClickVideoCall(workingArea: UserModel)
 }

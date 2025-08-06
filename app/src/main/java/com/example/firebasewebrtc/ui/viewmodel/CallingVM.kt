@@ -31,60 +31,63 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
 
     private val _callStatus = MutableStateFlow("Initializing")
     val callStatus: StateFlow<String> = _callStatus
-    lateinit var webRtcManager: WebRtcManager
-    private var signalingClient: FirebaseSignalingClient? = null
+
+    private lateinit var _webRtcManager: WebRtcManager
+    private var _signalingClient: FirebaseSignalingClient? = null
 
     fun initCallSend(
-        sessionId: String, svrLocalView: SurfaceViewRenderer, isCaller: Boolean = false
+        sessionId: String,
+        svrLocalView: SurfaceViewRenderer,
+        isCaller: Boolean = false,
+        isAudioOnly: Boolean = false
     ) {
-        webRtcManager = WebRtcManager(getApplication(), eventListener = this)
-        webRtcManager.initPeerConnectionFactory()
-        webRtcManager.initLocalStream(svrLocalView)
-        webRtcManager.createPeerConnection()
+        _webRtcManager =
+            WebRtcManager(getApplication(), eventListener = this, isAudioCallOnly = isAudioOnly)
+        _webRtcManager.initPeerConnectionFactory()
+        _webRtcManager.initLocalStream(svrLocalView)
+        _webRtcManager.createPeerConnection()
 
-        signalingClient = FirebaseSignalingClient(
+        _signalingClient = FirebaseSignalingClient(
             callOrSessionId = sessionId, listener = this
         )
 
         if (isCaller) {
-            fetchNotification(sessionId)
+            fetchNotification(sessionId, isAudioOnly)
         }
     }
 
-    fun initLocalRenderer(svrRemoteView: SurfaceViewRenderer) {
-        webRtcManager.initLocalStream(svrRemoteView)
-//        webRtcManager.createPeerConnection()
-    }
-
-    fun setRemoteRenderer(surfaceRenderer: SurfaceViewRenderer) {
-        surfaceRenderer.init(webRtcManager.eglBaseRef.eglBaseContext, null)
-        surfaceRenderer.setZOrderMediaOverlay(true)
+    fun setRemoteRenderer(svrRemoteRenderer: SurfaceViewRenderer) {
+        if (::_webRtcManager.isInitialized) {
+            _webRtcManager.setRemoteView(svrRemoteRenderer)
+        } else {
+            Log.w("CallingVM", "WebRtcManager not initialized yet!")
+        }
     }
 
     override fun onRemoteSessionReceived(session: SessionDescription) {
         Log.d("CALLING_VM", "Remote session received: ${session.type}")
-        webRtcManager.setRemoteDescription(session)
+        _webRtcManager.setRemoteDescription(session)
         if (session.type == SessionDescription.Type.OFFER) {
             _callStatus.value = "Incoming Call"
-            webRtcManager.createAnswer { answer ->
-                signalingClient?.sendAnswer(answer)
+            _webRtcManager.createAnswer { answer ->
+                _signalingClient?.sendAnswer(answer)
                 _callStatus.value = "Answered"
             }
         }
     }
 
     override fun onIceCandidateReceived(iceCandidate: IceCandidate) {
-        webRtcManager.addIceCandidate(iceCandidate)
+        _webRtcManager.addIceCandidate(iceCandidate)
     }
 
     override fun onCallEnded() {
         _callStatus.value = "Call Ended"
-        webRtcManager.close()
-        signalingClient?.release()
+        _webRtcManager.close()
+        _signalingClient?.release()
     }
 
     override fun onIceCandidate(candidate: IceCandidate) {
-        signalingClient?.sendIceCandidate(candidate)
+        _signalingClient?.sendIceCandidate(candidate)
     }
 
     override fun onAddRemoteStream(stream: MediaStream) {
@@ -98,7 +101,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     }
 
     fun endCall() {
-        signalingClient?.sendCallEnded()
+        _signalingClient?.sendCallEnded()
         onCallEnded()
     }
 
@@ -117,21 +120,21 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     override fun onCleared() {
         super.onCleared()
         try {
-            webRtcManager.close()
-            signalingClient?.release()
+            _webRtcManager.close()
+            _signalingClient?.release()
         } catch (e: Exception) {
             Log.e("CallingVM", "Cleanup failed: ${e.message}")
         }
     }
 
     fun cleanupCallSession() {
-        signalingClient?.sendCallEnded()
-        signalingClient?.release()
-        webRtcManager.close()
+        _signalingClient?.sendCallEnded()
+        _signalingClient?.release()
+        _webRtcManager.close()
     }
 
-    fun fetchNotification(
-        callOrSessionId: String
+    private fun fetchNotification(
+        callOrSessionId: String, isAudioOnly: Boolean = false
     ) {
         val dateService =
             RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
@@ -140,7 +143,8 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                 calleeId = callOrSessionId,
                 title = "📞 Incoming Call",
                 body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
-                callId = callOrSessionId
+                callId = callOrSessionId,
+                callType = isAudioOnly.toString()
             )
         )
         call!!.enqueue(object : Callback<NotificationRequest?> {
@@ -149,15 +153,13 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                 call: Call<NotificationRequest?>, response: Response<NotificationRequest?>
             ) {
                 if (response.isSuccessful) {
-                    if (webRtcManager != null) {
-                        webRtcManager.createOffer { offer ->
-                            Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
-                            signalingClient?.sendOffer(
-                                offer,
-                                tergateBUserCallId = callOrSessionId,
-                                mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
-                            )
-                        }
+                    _webRtcManager.createOffer { offer ->
+                        Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
+                        _signalingClient?.sendOffer(
+                            offer,
+                            tergateBUserCallId = callOrSessionId,
+                            mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
+                        )
                     }
                 } else {
                     Log.e("CallActivity", "else")

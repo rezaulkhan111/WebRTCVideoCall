@@ -7,5 +7,5 @@ class NotificationRequest(
     @SerializedName("title") var title: String? = null,
     @SerializedName("body") var body: String? = null,
     @SerializedName("callId") var callId: String? = null,
-    @SerializedName("messageId") var messageId: String? = null
+    @SerializedName("callType") var callType: String? = null,
 )

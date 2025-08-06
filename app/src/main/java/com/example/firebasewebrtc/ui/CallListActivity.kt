@@ -66,12 +66,24 @@ class CallListActivity : BaseActivity(), UserInteraction {
             }
     }
 
-    override fun onClickCall(workingArea: UserModel) {
+    override fun onClickAudioCall(workingArea: UserModel) {
         if (!workingArea.calleeId.isNullOrEmpty()) {
             startActivity(Intent(this, CallActivity::class.java).apply {
                 putExtra("callId", workingArea.calleeId)
                 putExtra("isCaller", true)
+                putExtra(AppConstants.isAudioOrVideo, false)
             })
         }
     }
+
+    override fun onClickVideoCall(workingArea: UserModel) {
+        if (!workingArea.calleeId.isNullOrEmpty()) {
+            startActivity(Intent(this, CallActivity::class.java).apply {
+                putExtra("callId", workingArea.calleeId)
+                putExtra("isCaller", true)
+                putExtra(AppConstants.isAudioOrVideo, true)
+            })
+        }
+    }
+
 }

@@ -19,7 +19,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("FCM", "New token: $token")
+//        Log.d("FCM", "New token: $token")
 
         val calleeId: String? = SharedPreferenceUtil.getFCMToken()
         if (!calleeId.isNullOrEmpty()) {
@@ -36,15 +36,21 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             callId = data["callId"],
             calleeId = data["calleeId"],
             title = data["title"],
+            callType = data["callType"],
+            callerNumber = data["callerNumber"],
             body = data["body"]
         )
 
-        Log.e("FCM", "onMessageReceived: " + localFcmData.callId + " " + localFcmData.calleeId)
+        Log.e("FCM", "onMessageReceived: " + Gson().toJson(localFcmData))
+
         val intent = Intent(this, IncomingCallActivity::class.java).apply {
             putExtra("callId", localFcmData.callId)
             putExtra("callerId", localFcmData.calleeId)
+            putExtra(AppConstants.Common_Transfer_Data, Gson().toJson(localFcmData).toString())
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
+
+        this.startActivity(intent)
 
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

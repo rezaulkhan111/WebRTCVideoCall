@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.firebasewebrtc.AppConstants
 import com.example.firebasewebrtc.BaseActivity
 import com.example.firebasewebrtc.databinding.ActivityCallBinding
 import com.example.firebasewebrtc.ui.viewmodel.CallingVM
@@ -20,6 +21,8 @@ class CallActivity : BaseActivity() {
     private lateinit var binding: ActivityCallBinding
     private val callViewModel: CallingVM by viewModels()
     private lateinit var sessionId: String
+
+    private var mAudioVideoCallStatus: Boolean = false
     private var hasEnded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,17 +31,25 @@ class CallActivity : BaseActivity() {
         setContentView(binding.root)
 
         sessionId = intent.getStringExtra("callId").toString()
+        mAudioVideoCallStatus = intent.getBooleanExtra(AppConstants.isAudioOrVideo, false)
 
         if (sessionId.isNotEmpty()) {
             setupVideoViews(
-                binding.localView, binding.remoteView
+                binding.localView,
+                binding.remoteView
             )
 
             requestPermissionsIfNeeded {
-                callViewModel.initCallSend(sessionId, binding.localView, true)
+                callViewModel.initCallSend(
+                    sessionId,
+                    binding.localView,
+                    true,
+                    mAudioVideoCallStatus
+                )
 
-//                callViewModel.initLocalRenderer(binding.localView)
-                callViewModel.setRemoteRenderer(binding.remoteView)
+                if (mAudioVideoCallStatus) {
+                    callViewModel.setRemoteRenderer(binding.remoteView)
+                }
 
                 callViewModel.startCallTimeout {
                     if (!hasEnded) {
@@ -92,6 +103,10 @@ class CallActivity : BaseActivity() {
 
                         "Incoming Call", "Answered", "Call Connected" -> {
                             // Keep the screen active
+                        }
+
+                        else -> {
+                            finish()
                         }
                     }
                 }
