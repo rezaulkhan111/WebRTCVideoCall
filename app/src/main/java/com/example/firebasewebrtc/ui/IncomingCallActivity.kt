@@ -52,11 +52,11 @@ class IncomingCallActivity : AppCompatActivity() {
             }
 
             startActivity(intent)
-            finish()
+            this.finish()
         }
 
         btnReject.setOnClickListener {
-            finish()
+            this.finish()
         }
     }
 }

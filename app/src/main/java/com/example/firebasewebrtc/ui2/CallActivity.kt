@@ -35,16 +35,12 @@ class CallActivity : BaseActivity() {
 
         if (sessionId.isNotEmpty()) {
             setupVideoViews(
-                binding.localView,
-                binding.remoteView
+                binding.localView, binding.remoteView
             )
 
             requestPermissionsIfNeeded {
                 callViewModel.initCallSend(
-                    sessionId,
-                    binding.localView,
-                    true,
-                    mAudioVideoCallStatus
+                    sessionId, binding.localView, true, mAudioVideoCallStatus
                 )
 
                 if (mAudioVideoCallStatus) {
@@ -65,9 +61,9 @@ class CallActivity : BaseActivity() {
             observeCallStatus()
         }
 
-        binding.endCallBtn.setOnClickListener {
+        binding.btnEndCall.setOnClickListener {
             callViewModel.endCall()
-            finish()
+            this.finish()
         }
     }
 
@@ -89,12 +85,14 @@ class CallActivity : BaseActivity() {
 
                     when (status) {
                         "Call Ended" -> {
-                            if (!hasEnded) {
-                                hasEnded = true
-                                Handler(Looper.getMainLooper()).postDelayed({
-                                    finish()
-                                }, 15000) // wait 1 second before closing
-                            }
+//                            if (!hasEnded) {
+//                                hasEnded = true
+//                                Handler(Looper.getMainLooper()).postDelayed({
+//                                    finish()
+//                                }, 15000) // wait 1 second before closing
+//                            }
+
+                            finish()
                         }
 
                         "Initializing" -> {

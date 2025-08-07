@@ -1,10 +1,7 @@
 package com.example.firebasewebrtc
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
@@ -52,33 +49,33 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         this.startActivity(intent)
 
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+//        val pendingIntent = PendingIntent.getActivity(
+//            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//        )
 
-        val notification = NotificationCompat.Builder(this, "call_channel")
-            .setSmallIcon(R.drawable.ic_launcher_foreground).setContentTitle(localFcmData.title)
-            .setContentText(localFcmData.body).setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setFullScreenIntent(pendingIntent, true) // ✅ KEY LINE
-            .build()
+//        val notification = NotificationCompat.Builder(this, "call_channel")
+//            .setSmallIcon(R.drawable.ic_launcher_foreground).setContentTitle(localFcmData.title)
+//            .setContentText(localFcmData.body).setPriority(NotificationCompat.PRIORITY_HIGH)
+//            .setCategory(NotificationCompat.CATEGORY_CALL)
+//            .setFullScreenIntent(pendingIntent, true) // ✅ KEY LINE
+//            .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "call_channel", "Incoming Calls", NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Channel for incoming call notifications"
-                enableLights(true)
-                enableVibration(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            val channel = NotificationChannel(
+//                "call_channel", "Incoming Calls", NotificationManager.IMPORTANCE_HIGH
+//            ).apply {
+//                description = "Channel for incoming call notifications"
+//                enableLights(true)
+//                enableVibration(true)
+//                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+//            }
+//
+//            val notificationManager = getSystemService(NotificationManager::class.java)
+//            notificationManager.createNotificationChannel(channel)
+//        }
 
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(1, notification)
+//        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+//        manager.notify(1, notification)
     }
 
     private fun showNotification(title: String, message: String) {

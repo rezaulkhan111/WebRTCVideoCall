@@ -13,14 +13,15 @@ class FirebaseSignalingClient(
     private val listener: SignalingListener,
     firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    val callDoc = firestore.collection(AppConstants.FCM_collection).document(callOrSessionId)
+    private val callDocument =
+        firestore.collection(AppConstants.FCM_collection).document(callOrSessionId)
 
     private var callListener: ListenerRegistration? = null
     private var iceCandidateListener: ListenerRegistration? = null
 
     init {
         // Listen for SDP offer/answer
-        callListener = callDoc.addSnapshotListener { snapshot, error ->
+        callListener = callDocument.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 Log.e("Firestore", "Listener error", error)
                 return@addSnapshotListener
@@ -31,10 +32,10 @@ class FirebaseSignalingClient(
 
                 val type = data["type"] as? String ?: return@addSnapshotListener
 
-                if (type == "callEnd") {
+                if (type == null) {
                     listener.onCallEnded()
 
-                    callDoc.set(mapOf("type" to null), SetOptions.merge())
+                    callDocument.set(mapOf("type" to null), SetOptions.merge())
                     return@addSnapshotListener
                 }
 
@@ -53,9 +54,8 @@ class FirebaseSignalingClient(
 
         // Listen for ICE candidates
         iceCandidateListener =
-            callDoc.collection("candidates").addSnapshotListener { snapshots, _ ->
-                Log.e("Firestore", "iceCandidateListener: ${snapshots}")
-
+            callDocument.collection("candidates").addSnapshotListener { snapshots, _ ->
+                Log.e("Firestore", "iceCandidateListener: ")
                 snapshots?.documentChanges?.forEach { change ->
                     val doc = change.document
                     val candidate = IceCandidate(
@@ -82,7 +82,7 @@ class FirebaseSignalingClient(
         tergateBUserCallId?.let { data["calleeId"] = it }
         mCurrentUserCallId?.let { data["callerId"] = it }
 
-        callDoc.set(data, SetOptions.merge()).addOnSuccessListener {
+        callDocument.set(data, SetOptions.merge()).addOnSuccessListener {
             Log.d("Firestore", "Offer successfully sent.")
         }.addOnFailureListener {
             Log.e("Firestore", "Failed to send offer: ${it.message}")
@@ -91,11 +91,11 @@ class FirebaseSignalingClient(
 
     fun sendAnswer(answer: SessionDescription) {
         Log.e("Firestore", "sendAnswer: ${answer.type}")
-        callDoc.set(mapOf("type" to "answer", "sdp" to answer.description), SetOptions.merge())
+        callDocument.set(mapOf("type" to "answer", "sdp" to answer.description), SetOptions.merge())
     }
 
     fun sendIceCandidate(candidate: IceCandidate) {
-        callDoc.collection("candidates").add(
+        callDocument.collection("candidates").add(
             mapOf(
                 "sdpMid" to candidate.sdpMid,
                 "sdpMLineIndex" to candidate.sdpMLineIndex,
@@ -105,7 +105,7 @@ class FirebaseSignalingClient(
     }
 
     fun sendCallEnded() {
-        callDoc.set(mapOf("type" to null, "sdp" to null), SetOptions.merge())
+        callDocument.set(mapOf("type" to null, "sdp" to null), SetOptions.merge())
     }
 
     fun release() {
