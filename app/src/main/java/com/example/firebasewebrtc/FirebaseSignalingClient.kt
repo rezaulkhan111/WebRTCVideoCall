@@ -70,7 +70,7 @@ class FirebaseSignalingClient(
 
     fun sendOffer(
         offer: SessionDescription,
-        tergateBUserCallId: String? = null,
+        targetBUserCallId: String? = null,
         mCurrentUserCallId: String? = null
     ) {
         Log.e("Firestore", "Sending offer SDP: ${offer.description}")
@@ -79,7 +79,7 @@ class FirebaseSignalingClient(
             "type" to "offer", "sdp" to offer.description
         )
 
-        tergateBUserCallId?.let { data["calleeId"] = it }
+        targetBUserCallId?.let { data["calleeId"] = it }
         mCurrentUserCallId?.let { data["callerId"] = it }
 
         callDocument.set(data, SetOptions.merge()).addOnSuccessListener {

@@ -138,7 +138,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
     ) {
         val dateService =
             RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
-        val call = dateService?.requestNotification(
+        val callService = dateService?.requestNotification(
             NotificationRequest(
                 calleeId = callOrSessionId,
                 title = "📞 Incoming Call",
@@ -147,7 +147,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                 callType = isAudioOnly.toString()
             )
         )
-        call!!.enqueue(object : Callback<NotificationRequest?> {
+        callService!!.enqueue(object : Callback<NotificationRequest?> {
             @SuppressLint("NewApi", "SetTextI18n")
             override fun onResponse(
                 call: Call<NotificationRequest?>, response: Response<NotificationRequest?>
@@ -157,7 +157,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                         Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
                         _signalingClient?.sendOffer(
                             offer,
-                            tergateBUserCallId = callOrSessionId,
+                            targetBUserCallId = callOrSessionId,
                             mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
                         )
                     }
