@@ -1,10 +1,9 @@
-package com.example.firebasewebrtc.data
+package com.example.firebasewebrtc.presentation.webrtc
 
 import android.content.Context
 import android.media.AudioManager
 import android.util.Log
-import com.example.firebasewebrtc.SimpleSdpObserver
-import com.example.firebasewebrtc.VideoService
+import com.example.firebasewebrtc.utils.VideoService
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.Camera2Enumerator

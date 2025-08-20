@@ -1,4 +1,4 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.domain.signaling
 
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription

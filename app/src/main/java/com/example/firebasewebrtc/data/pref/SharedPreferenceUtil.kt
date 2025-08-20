@@ -1,7 +1,8 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.data.pref
 
 import android.util.Log
 import androidx.core.content.edit
+import com.example.firebasewebrtc.WebRTCApplication
 
 object SharedPreferenceUtil {
     private var preferences = WebRTCApplication.preferences

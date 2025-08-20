@@ -1,4 +1,4 @@
-package com.example.firebasewebrtc.ui
+package com.example.firebasewebrtc.presentation.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -7,17 +7,16 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.firebasewebrtc.AppConstants
-import com.example.firebasewebrtc.FirebaseRMessage
+import com.example.firebasewebrtc.utils.AppConstants
+import com.example.firebasewebrtc.data.model.FirebaseRMessageDTO
 import com.example.firebasewebrtc.R
-import com.example.firebasewebrtc.ui.ReceivedCallActivity
 import com.google.gson.Gson
 
 class IncomingCallActivity : AppCompatActivity() {
 
     private lateinit var callerId: String
     private lateinit var callId: String
-    private var mObjJsonData: FirebaseRMessage? = null
+    private var mObjJsonData: FirebaseRMessageDTO? = null
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +26,7 @@ class IncomingCallActivity : AppCompatActivity() {
         callerId = intent.getStringExtra("callerId") ?: ""
         callId = intent.getStringExtra("callId") ?: ""
         val mJsonString = intent.getStringExtra(AppConstants.Common_Transfer_Data)
-        mObjJsonData = Gson().fromJson(mJsonString, FirebaseRMessage::class.java)
+        mObjJsonData = Gson().fromJson(mJsonString, FirebaseRMessageDTO::class.java)
 
         val tvIncomingFrom: TextView = findViewById(R.id.tvIncomingFrom)
         val ivCallType: ImageView = findViewById(R.id.ivCallType)

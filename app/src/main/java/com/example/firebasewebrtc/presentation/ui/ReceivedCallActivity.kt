@@ -1,33 +1,28 @@
-package com.example.firebasewebrtc.ui2
+package com.example.firebasewebrtc.presentation.ui
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.firebasewebrtc.AppConstants
-import com.example.firebasewebrtc.BaseActivity
-import com.example.firebasewebrtc.databinding.ActivityCallBinding
-import com.example.firebasewebrtc.ui.viewmodel.CallingVM
+import com.example.firebasewebrtc.utils.AppConstants
+import com.example.firebasewebrtc.presentation.base.BaseActivity
+import com.example.firebasewebrtc.databinding.ActivityReceivedCallBinding
+import com.example.firebasewebrtc.presentation.viewmodel.CallingVM
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.webrtc.SurfaceViewRenderer
 
-class CallActivity : BaseActivity() {
-    private lateinit var binding: ActivityCallBinding
+class ReceivedCallActivity : BaseActivity() {
+    private lateinit var binding: ActivityReceivedCallBinding
     private val callViewModel: CallingVM by viewModels()
     private lateinit var sessionId: String
-
-    private var mAudioVideoCallStatus: Boolean = false
     private var hasEnded = false
+    private var mAudioVideoCallStatus: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCallBinding.inflate(layoutInflater)
+        binding = ActivityReceivedCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         sessionId = intent.getStringExtra("callId").toString()
@@ -40,21 +35,11 @@ class CallActivity : BaseActivity() {
 
             requestPermissionsIfNeeded {
                 callViewModel.initCallSend(
-                    sessionId, binding.localView, true, mAudioVideoCallStatus
+                    sessionId, binding.localView, false, mAudioVideoCallStatus
                 )
 
                 if (mAudioVideoCallStatus) {
                     callViewModel.setRemoteRenderer(binding.remoteView)
-                }
-
-                callViewModel.startCallTimeout {
-                    if (!hasEnded) {
-//                        runOnUiThread {
-//                            Toast.makeText(this, "Call timed out", Toast.LENGTH_SHORT).show()
-//                            callViewModel.endCall()
-//                            finish()
-//                        }
-                    }
                 }
             }
 
@@ -79,19 +64,16 @@ class CallActivity : BaseActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 callViewModel.callStatus.collectLatest { status ->
-                    Log.e("CALL_ACTIVITY", "Call status: $status")
-
                     binding.callStatusText.text = status
 
                     when (status) {
                         "Call Ended" -> {
 //                            if (!hasEnded) {
 //                                hasEnded = true
-//                                Handler(Looper.getMainLooper()).postDelayed({
-//                                    finish()
-//                                }, 15000) // wait 1 second before closing
+////                                Handler(Looper.getMainLooper()).postDelayed({
+////                                    finish()
+////                                }, 1000) // wait 1 second before closing
 //                            }
-
                             finish()
                         }
 

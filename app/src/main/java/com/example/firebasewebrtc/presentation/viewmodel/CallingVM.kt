@@ -1,18 +1,18 @@
-package com.example.firebasewebrtc.ui.viewmodel
+package com.example.firebasewebrtc.presentation.viewmodel
 
 import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.firebasewebrtc.FirebaseSignalingClient
-import com.example.firebasewebrtc.IApiService
-import com.example.firebasewebrtc.NotificationRequest
+import com.example.firebasewebrtc.data.signaling.FirebaseSignalingClient
+import com.example.firebasewebrtc.data.api.IApiService
+import com.example.firebasewebrtc.data.model.NotificationRequestDTO
 import com.example.firebasewebrtc.RetrofitClientInstance
-import com.example.firebasewebrtc.SharedPreferenceUtil
-import com.example.firebasewebrtc.SignalingListener
-import com.example.firebasewebrtc.data.WebRtcEventListener
-import com.example.firebasewebrtc.data.WebRtcManager
+import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
+import com.example.firebasewebrtc.domain.signaling.SignalingListener
+import com.example.firebasewebrtc.presentation.webrtc.WebRtcEventListener
+import com.example.firebasewebrtc.presentation.webrtc.WebRtcManager
 import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -139,7 +139,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
         val dateService =
             RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
         val callService = dateService?.requestNotification(
-            NotificationRequest(
+            NotificationRequestDTO(
                 calleeId = callOrSessionId,
                 title = "📞 Incoming Call",
                 body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
@@ -147,10 +147,10 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                 callType = isAudioOnly.toString()
             )
         )
-        callService!!.enqueue(object : Callback<NotificationRequest?> {
+        callService!!.enqueue(object : Callback<NotificationRequestDTO?> {
             @SuppressLint("NewApi", "SetTextI18n")
             override fun onResponse(
-                call: Call<NotificationRequest?>, response: Response<NotificationRequest?>
+                call: Call<NotificationRequestDTO?>, response: Response<NotificationRequestDTO?>
             ) {
                 if (response.isSuccessful) {
                     _webRtcManager.createOffer { offer ->
@@ -166,7 +166,7 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                 }
             }
 
-            override fun onFailure(call: Call<NotificationRequest?>, t: Throwable) {
+            override fun onFailure(call: Call<NotificationRequestDTO?>, t: Throwable) {
                 Log.e("CallActivity", "else: " + t.message)
             }
         })

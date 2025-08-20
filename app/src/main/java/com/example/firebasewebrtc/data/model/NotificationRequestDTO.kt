@@ -1,8 +1,8 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.data.model
 
 import com.google.gson.annotations.SerializedName
 
-class NotificationRequest(
+class NotificationRequestDTO(
     @SerializedName("calleeId") var calleeId: String? = null,
     @SerializedName("title") var title: String? = null,
     @SerializedName("body") var body: String? = null,

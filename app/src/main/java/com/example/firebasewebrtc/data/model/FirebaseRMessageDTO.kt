@@ -1,7 +1,7 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.data.model
 
 
-class FirebaseRMessage(
+class FirebaseRMessageDTO(
     val callId: String? = null,
     val calleeId: String? = null,
     val title: String? = null,

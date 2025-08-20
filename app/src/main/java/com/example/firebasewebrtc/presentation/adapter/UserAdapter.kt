@@ -1,15 +1,16 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.presentation.adapter
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.firebasewebrtc.domain.model.UserInfoDetails
 import com.example.firebasewebrtc.databinding.ListItemUserDataBinding
 
 class UserAdapter(
     private val iCallBack: UserInteraction
 ) : RecyclerView.Adapter<UserAdapter.UserVH>() {
-    private var workingAreas: MutableList<UserModel> = mutableListOf()
+    private var workingAreas: MutableList<UserInfoDetails> = mutableListOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserVH {
         return UserVH(
@@ -20,7 +21,7 @@ class UserAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun setWorkingAreas(listWorkingArea: MutableList<UserModel>) {
+    fun setWorkingAreas(listWorkingArea: MutableList<UserInfoDetails>) {
         workingAreas = listWorkingArea
         notifyDataSetChanged()
     }
@@ -53,7 +54,7 @@ class UserAdapter(
     inner class UserVH(val binding: ListItemUserDataBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun onBind(workingArea: UserModel) {
+        fun onBind(workingArea: UserInfoDetails) {
             binding.apply {
                 tvName.text = workingArea.calleeId
             }
@@ -62,6 +63,6 @@ class UserAdapter(
 }
 
 interface UserInteraction {
-    fun onClickAudioCall(workingArea: UserModel)
-    fun onClickVideoCall(workingArea: UserModel)
+    fun onClickAudioCall(workingArea: UserInfoDetails)
+    fun onClickVideoCall(workingArea: UserInfoDetails)
 }

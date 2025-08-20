@@ -1,4 +1,4 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.presentation.webrtc
 
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription

@@ -1,4 +1,4 @@
-package com.example.firebasewebrtc
+package com.example.firebasewebrtc.utils
 
 object AppConstants {
     const val FCM_collection = "calls"
