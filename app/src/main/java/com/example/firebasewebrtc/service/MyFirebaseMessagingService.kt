@@ -2,10 +2,9 @@ package com.example.firebasewebrtc.service
 
 import android.content.Intent
 import android.util.Log
-import com.example.firebasewebrtc.utils.AppConstants
 import com.example.firebasewebrtc.data.model.FirebaseRMessageDTO
-import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
 import com.example.firebasewebrtc.presentation.ui.IncomingCallActivity
+import com.example.firebasewebrtc.utils.AppConstants
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -17,7 +16,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
 //        Log.d("FCM", "New token: $token")
 
-        val calleeId: String? = SharedPreferenceUtil.getFCMToken()
+        val calleeId: String? = "SharedPreferenceUtil.getFCMToken()"
         if (!calleeId.isNullOrEmpty()) {
             FirebaseFirestore.getInstance().collection(AppConstants.FCM_collection)
                 .document(calleeId).update("fcmToken", token)

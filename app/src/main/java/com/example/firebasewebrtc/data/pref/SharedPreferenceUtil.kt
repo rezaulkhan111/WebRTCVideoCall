@@ -1,15 +1,19 @@
 package com.example.firebasewebrtc.data.pref
 
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
 import com.example.firebasewebrtc.WebRTCApplication
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object SharedPreferenceUtil {
-    private var preferences = WebRTCApplication.preferences
+@Singleton
+class SharedPreferenceUtil @Inject constructor(
+    private val preferences: SharedPreferences
+) {
 
     fun getFCMToken() = preferences.getString(
-        SharedPreferenceConstants.FCM_TOKEN_KEY,
-        ""
+        SharedPreferenceConstants.FCM_TOKEN_KEY, ""
     )
 
     fun setFCMToken(token: String?) {
@@ -19,8 +23,7 @@ object SharedPreferenceUtil {
     }
 
     fun getFCMCallerId() = preferences.getString(
-        SharedPreferenceConstants.FCM_CALL_ID_KEY,
-        ""
+        SharedPreferenceConstants.FCM_CALL_ID_KEY, ""
     )
 
     fun setFCMCallerId(callId: String?) {

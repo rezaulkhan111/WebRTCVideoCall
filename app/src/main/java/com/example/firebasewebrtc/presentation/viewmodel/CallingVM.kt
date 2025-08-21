@@ -3,6 +3,7 @@ package com.example.firebasewebrtc.presentation.viewmodel
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebasewebrtc.data.model.NotificationRequestDTO
 import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
@@ -13,6 +14,7 @@ import com.example.firebasewebrtc.presentation.webrtc.WebRtcEventListener
 import com.example.firebasewebrtc.presentation.webrtc.WebRtcManager
 import com.example.firebasewebrtc.utils.ApiResult
 import com.google.gson.Gson
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,9 +25,12 @@ import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import javax.inject.Inject
 
+@HiltViewModel
 class CallingVM @Inject constructor(
-    private val repository: ICallRepository, appRef: Application
-) : AndroidViewModel(appRef), SignalingListener, WebRtcEventListener {
+    private val repository: ICallRepository,
+    private val sharedPreferenceUtil: SharedPreferenceUtil,
+    appRef: Application
+) : ViewModel(), SignalingListener, WebRtcEventListener {
 
     private val _callStatus = MutableStateFlow("Initializing")
     private val _repositories = MutableStateFlow<NotificationRequestDTO?>(null)
@@ -42,8 +47,7 @@ class CallingVM @Inject constructor(
         isCaller: Boolean = false,
         isAudioOnly: Boolean = false
     ) {
-        _webRtcManager =
-            WebRtcManager(getApplication(), eventListener = this, isAudioCallOnly = isAudioOnly)
+//        _webRtcManager =            WebRtcManager(null, eventListener = this, isAudioCallOnly = isAudioOnly)
         _webRtcManager.initPeerConnectionFactory()
         _webRtcManager.initLocalStream(svrLocalView)
         _webRtcManager.createPeerConnection()
@@ -143,7 +147,7 @@ class CallingVM @Inject constructor(
                 NotificationRequestDTO(
                     calleeId = callOrSessionId,
                     title = "📞 Incoming Call",
-                    body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
+                    body = "User SharedPreferenceUtil.getFCMCallerId() is calling you...",
                     callId = callOrSessionId,
                     callType = isAudioOnly.toString()
                 )
@@ -156,7 +160,7 @@ class CallingVM @Inject constructor(
                         _signalingClient?.sendOffer(
                             offer,
                             targetBUserCallId = callOrSessionId,
-                            mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
+                            mCurrentUserCallId = "SharedPreferenceUtil.getFCMCallerId()"
                         )
                     }
                 }

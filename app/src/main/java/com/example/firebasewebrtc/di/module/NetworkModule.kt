@@ -1,8 +1,8 @@
 package com.example.firebasewebrtc.di.module
 
 import com.example.firebasewebrtc.data.api.IApiService
-import com.google.android.datatransport.runtime.dagger.Module
 import com.google.android.datatransport.runtime.dagger.Provides
+import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
@@ -15,12 +15,30 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 @Module
 class NetworkModule {
+
     @Provides
-    fun provideRetrofit(okHttpClient: OkHttpClient): IApiService {
-        return Retrofit.Builder().baseUrl("http://192.168.0.110:6060/api/Notification/")
-            .client(okHttpClient).addConverterFactory(GsonConverterFactory.create()).build()
-            .create(IApiService::class.java)
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("http://192.168.0.110:6060/api/Notification/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideApiService(retrofit: Retrofit): IApiService {
+        return retrofit.create(IApiService::class.java)
+    }
+
+//    @Provides
+//    fun provideRetrofit(okHttpClient: OkHttpClient): IApiService {
+//        return Retrofit.Builder().baseUrl("http://192.168.0.110:6060/api/Notification/")
+//            .client(okHttpClient)
+//            .addConverterFactory(GsonConverterFactory.create()).build()
+//            .create(IApiService::class.java)
+//    }
 
     @Provides
     @Singleton

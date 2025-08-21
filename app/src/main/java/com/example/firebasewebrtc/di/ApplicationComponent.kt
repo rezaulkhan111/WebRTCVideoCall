@@ -1,14 +1,16 @@
 package com.example.firebasewebrtc.di
 
 import android.content.Context
+import com.example.firebasewebrtc.di.module.AppModule
 import com.example.firebasewebrtc.di.module.NetworkModule
+import com.example.firebasewebrtc.di.module.RepositoryModule
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton
 
 @Singleton
 @Component(
-    modules = [NetworkModule::class]
+    modules = [NetworkModule::class, AppModule::class, RepositoryModule::class]
 )
 interface ApplicationComponent {
     @Component.Factory

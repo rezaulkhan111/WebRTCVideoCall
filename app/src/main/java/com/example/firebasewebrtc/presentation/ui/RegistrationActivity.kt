@@ -4,9 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.example.firebasewebrtc.utils.AppConstants
-import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
 import com.example.firebasewebrtc.databinding.ActivityRegistrationBinding
+import com.example.firebasewebrtc.utils.AppConstants
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 
@@ -22,7 +21,7 @@ class RegistrationActivity : AppCompatActivity() {
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (!SharedPreferenceUtil.getFCMToken().isNullOrEmpty()) {
+        if ("".isNullOrEmpty()/*!SharedPreferenceUtil.getFCMToken().isNullOrEmpty()*/) {
             startActivity(Intent(this@RegistrationActivity, CallListActivity::class.java))
             finish()
         } else {
@@ -41,8 +40,8 @@ class RegistrationActivity : AppCompatActivity() {
                                     val documentId = document.id
                                     val fcmToken = document.getString("fcmToken")
 
-                                    SharedPreferenceUtil.setFCMCallerId(documentId)
-                                    SharedPreferenceUtil.setFCMToken(fcmToken)
+//                                    SharedPreferenceUtil.setFCMCallerId(documentId)
+//                                    SharedPreferenceUtil.setFCMToken(fcmToken)
 
                                     startActivity(
                                         Intent(
@@ -69,8 +68,8 @@ class RegistrationActivity : AppCompatActivity() {
             }
 
             val fcmToken = task.result
-            SharedPreferenceUtil.setFCMCallerId(calleeId)
-            SharedPreferenceUtil.setFCMToken(fcmToken)
+//            SharedPreferenceUtil.setFCMCallerId(calleeId)
+//            SharedPreferenceUtil.setFCMToken(fcmToken)
 
             val userData = mapOf(
                 "calleeId" to calleeId, "fcmToken" to fcmToken, "sdp" to null, "type" to null

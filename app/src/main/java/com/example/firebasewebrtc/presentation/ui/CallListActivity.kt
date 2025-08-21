@@ -5,13 +5,12 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.firebasewebrtc.utils.AppConstants
-import com.example.firebasewebrtc.presentation.base.BaseActivity
-import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
+import com.example.firebasewebrtc.databinding.ActivityCallListBinding
+import com.example.firebasewebrtc.domain.model.UserInfoDetails
 import com.example.firebasewebrtc.presentation.adapter.UserAdapter
 import com.example.firebasewebrtc.presentation.adapter.UserInteraction
-import com.example.firebasewebrtc.domain.model.UserInfoDetails
-import com.example.firebasewebrtc.databinding.ActivityCallListBinding
+import com.example.firebasewebrtc.presentation.base.BaseActivity
+import com.example.firebasewebrtc.utils.AppConstants
 import com.google.firebase.firestore.FirebaseFirestore
 
 class CallListActivity : BaseActivity(), UserInteraction {
@@ -38,7 +37,7 @@ class CallListActivity : BaseActivity(), UserInteraction {
             }
         }
 
-        val currentCallId = SharedPreferenceUtil.getFCMCallerId().toString()
+        val currentCallId ="ddfdf" /*SharedPreferenceUtil.getFCMCallerId().toString()*/
         firestore.collection(AppConstants.FCM_collection).get()
             .addOnSuccessListener { querySnapshot ->
                 querySnapshot.forEach { documentId ->

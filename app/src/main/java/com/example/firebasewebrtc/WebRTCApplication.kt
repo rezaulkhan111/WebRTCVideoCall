@@ -1,33 +1,42 @@
 package com.example.firebasewebrtc
 
 import android.app.Application
-import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.android.gms.tasks.Task
-import com.google.firebase.firestore.BuildConfig
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
-import com.google.firebase.messaging.FirebaseMessaging
+import com.example.firebasewebrtc.di.ApplicationComponent
+import com.example.firebasewebrtc.di.DaggerApplicationComponent
+import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
+@HiltAndroidApp
 class WebRTCApplication : Application() {
+
+    val applicationComponent: ApplicationComponent by lazy {
+        initializeComponent()
+    }
+
+    private fun initializeComponent(): ApplicationComponent {
+        return DaggerApplicationComponent.factory().create(applicationContext)
+    }
+
+    @Inject
+    lateinit var preferences: SharedPreferences
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
-        preferences = getSharedPreferences("com.example.firebasewebrtc", MODE_PRIVATE)
+//        instance = this
+//        preferences = getSharedPreferences("com.example.firebasewebrtc", MODE_PRIVATE)
     }
 
     companion object {
-        lateinit var instance: WebRTCApplication
-            private set
+//        lateinit var instance: WebRTCApplication
+//            private set
 
-        lateinit var preferences: SharedPreferences
-            private set
+//        @Inject
+//        lateinit var preferences: SharedPreferences
+//            private set
 
-        fun getAppContext(): WebRTCApplication {
-            return instance
-        }
+//        fun getAppContext(): WebRTCApplication {
+//            return instance
+//        }
     }
 }
