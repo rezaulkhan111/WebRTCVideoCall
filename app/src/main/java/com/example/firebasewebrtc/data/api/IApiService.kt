@@ -9,5 +9,9 @@ import retrofit2.http.POST
 interface IApiService {
     @Headers("Accept: application/json")
     @POST("send-call-notification")
-    fun requestNotification(@Body request: NotificationRequestDTO): Call<NotificationRequestDTO>
+    fun requestNotification2(@Body request: NotificationRequestDTO): Call<NotificationRequestDTO>
+
+    @Headers("Accept: application/json")
+    @POST("send-call-notification")
+   suspend fun requestNotification(@Body request: NotificationRequestDTO?): NotificationRequestDTO
 }

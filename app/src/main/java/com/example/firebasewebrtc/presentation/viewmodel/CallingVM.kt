@@ -1,18 +1,17 @@
 package com.example.firebasewebrtc.presentation.viewmodel
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.firebasewebrtc.data.signaling.FirebaseSignalingClient
-import com.example.firebasewebrtc.data.api.IApiService
 import com.example.firebasewebrtc.data.model.NotificationRequestDTO
-import com.example.firebasewebrtc.RetrofitClientInstance
 import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
+import com.example.firebasewebrtc.data.signaling.FirebaseSignalingClient
+import com.example.firebasewebrtc.domain.repository.ICallRepository
 import com.example.firebasewebrtc.domain.signaling.SignalingListener
 import com.example.firebasewebrtc.presentation.webrtc.WebRtcEventListener
 import com.example.firebasewebrtc.presentation.webrtc.WebRtcManager
+import com.example.firebasewebrtc.utils.ApiResult
 import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,16 +21,18 @@ import org.webrtc.IceCandidate
 import org.webrtc.MediaStream
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import javax.inject.Inject
 
-class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListener,
-    WebRtcEventListener {
+class CallingVM @Inject constructor(
+    private val repository: ICallRepository, appRef: Application
+) : AndroidViewModel(appRef), SignalingListener, WebRtcEventListener {
 
     private val _callStatus = MutableStateFlow("Initializing")
-    val callStatus: StateFlow<String> = _callStatus
+    private val _repositories = MutableStateFlow<NotificationRequestDTO?>(null)
+    private val _canFetchMessage = MutableStateFlow<String?>(null)
 
+
+    val callStatus: StateFlow<String> = _callStatus
     private lateinit var _webRtcManager: WebRtcManager
     private var _signalingClient: FirebaseSignalingClient? = null
 
@@ -52,7 +53,8 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
         )
 
         if (isCaller) {
-            fetchNotification(sessionId, isAudioOnly)
+//            fetchNotification(sessionId, isAudioOnly)
+            requestNotification(sessionId, isAudioOnly)
         }
     }
 
@@ -133,26 +135,22 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
         _webRtcManager.close()
     }
 
-    private fun fetchNotification(
+    private fun requestNotification(
         callOrSessionId: String, isAudioOnly: Boolean = false
     ) {
-        val dateService =
-            RetrofitClientInstance.getRetrofitInstance()?.create(IApiService::class.java)
-        val callService = dateService?.requestNotification(
-            NotificationRequestDTO(
-                calleeId = callOrSessionId,
-                title = "📞 Incoming Call",
-                body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
-                callId = callOrSessionId,
-                callType = isAudioOnly.toString()
-            )
-        )
-        callService!!.enqueue(object : Callback<NotificationRequestDTO?> {
-            @SuppressLint("NewApi", "SetTextI18n")
-            override fun onResponse(
-                call: Call<NotificationRequestDTO?>, response: Response<NotificationRequestDTO?>
-            ) {
-                if (response.isSuccessful) {
+        viewModelScope.launch {
+            when (val result = repository.requestNotification(
+                NotificationRequestDTO(
+                    calleeId = callOrSessionId,
+                    title = "📞 Incoming Call",
+                    body = "User ${SharedPreferenceUtil.getFCMCallerId()} is calling you...",
+                    callId = callOrSessionId,
+                    callType = isAudioOnly.toString()
+                )
+            )) {
+                is ApiResult.Success -> {
+                    _repositories.value = result.data
+
                     _webRtcManager.createOffer { offer ->
                         Log.e("CALLING_VM", "Offer created, sending..." + Gson().toJson(offer))
                         _signalingClient?.sendOffer(
@@ -161,14 +159,12 @@ class CallingVM(appRef: Application) : AndroidViewModel(appRef), SignalingListen
                             mCurrentUserCallId = SharedPreferenceUtil.getFCMCallerId()
                         )
                     }
-                } else {
-                    Log.e("CallActivity", "else")
+                }
+
+                is ApiResult.Error -> {
+                    _canFetchMessage.value = result.exception.message
                 }
             }
-
-            override fun onFailure(call: Call<NotificationRequestDTO?>, t: Throwable) {
-                Log.e("CallActivity", "else: " + t.message)
-            }
-        })
+        }
     }
 }
