@@ -10,10 +10,12 @@ import com.example.firebasewebrtc.utils.AppConstants
 import com.example.firebasewebrtc.presentation.base.BaseActivity
 import com.example.firebasewebrtc.databinding.ActivityCallBinding
 import com.example.firebasewebrtc.presentation.viewmodel.CallingVM
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.webrtc.SurfaceViewRenderer
 
+@AndroidEntryPoint
 class CallActivity : BaseActivity() {
     private lateinit var binding: ActivityCallBinding
     private val callViewModel: CallingVM by viewModels()

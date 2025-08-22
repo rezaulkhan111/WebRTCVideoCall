@@ -13,7 +13,7 @@ import javax.inject.Singleton
 abstract class RepositoryModule {
     @Binds
     @Singleton
-    abstract fun bindGitHubRepository(
-        gitHubRepository: CallRepositoryImpl
+    abstract fun bindCallRepository(
+        callRepository: CallRepositoryImpl
     ): ICallRepository
 }

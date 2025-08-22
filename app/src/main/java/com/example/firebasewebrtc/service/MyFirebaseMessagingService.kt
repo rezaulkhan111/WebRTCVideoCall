@@ -18,8 +18,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val calleeId: String? = "SharedPreferenceUtil.getFCMToken()"
         if (!calleeId.isNullOrEmpty()) {
-            FirebaseFirestore.getInstance().collection(AppConstants.FCM_collection)
-                .document(calleeId).update("fcmToken", token)
+            FirebaseFirestore
+                .getInstance()
+                .collection(AppConstants.FCM_collection)
+                .document(calleeId)
+                .update("fcmToken", token)
         }
     }
 

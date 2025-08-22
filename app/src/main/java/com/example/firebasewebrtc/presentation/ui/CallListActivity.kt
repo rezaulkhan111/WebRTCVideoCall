@@ -3,6 +3,8 @@ package com.example.firebasewebrtc.presentation.ui
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firebasewebrtc.databinding.ActivityCallListBinding
@@ -10,13 +12,20 @@ import com.example.firebasewebrtc.domain.model.UserInfoDetails
 import com.example.firebasewebrtc.presentation.adapter.UserAdapter
 import com.example.firebasewebrtc.presentation.adapter.UserInteraction
 import com.example.firebasewebrtc.presentation.base.BaseActivity
+import com.example.firebasewebrtc.presentation.viewmodel.CallingVM
 import com.example.firebasewebrtc.utils.AppConstants
 import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import kotlin.getValue
 
+@AndroidEntryPoint
 class CallListActivity : BaseActivity(), UserInteraction {
 
     private lateinit var binding: ActivityCallListBinding
     private lateinit var adapterUser: UserAdapter
+
+    private val viewModel: CallingVM by viewModels()
 
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -37,9 +46,20 @@ class CallListActivity : BaseActivity(), UserInteraction {
             }
         }
 
-        val currentCallId ="ddfdf" /*SharedPreferenceUtil.getFCMCallerId().toString()*/
+
+        lifecycleScope.launch {
+            viewModel.fcmCallerId.collect { currentCallId ->
+                if (currentCallId != null) {
+                    fetchUserList(currentCallId)
+                }
+            }
+        }
+    }
+
+    private fun fetchUserList(currentCallId: String) {
         firestore.collection(AppConstants.FCM_collection).get()
             .addOnSuccessListener { querySnapshot ->
+                lsUserData.clear() // Clear previous data
                 querySnapshot.forEach { documentId ->
                     if (documentId.id != currentCallId) {
                         val localFcmToken = documentId.getString("fcmToken")
@@ -52,6 +72,7 @@ class CallListActivity : BaseActivity(), UserInteraction {
                 }
                 adapterUser.setWorkingAreas(lsUserData)
             }.addOnFailureListener { exception ->
+                // Handle the failure
             }
     }
 

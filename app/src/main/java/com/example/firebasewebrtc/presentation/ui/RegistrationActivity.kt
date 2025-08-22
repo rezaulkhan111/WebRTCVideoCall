@@ -3,25 +3,42 @@ package com.example.firebasewebrtc.presentation.ui
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.firebasewebrtc.databinding.ActivityRegistrationBinding
+import com.example.firebasewebrtc.presentation.viewmodel.CallingVM
 import com.example.firebasewebrtc.utils.AppConstants
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import kotlin.getValue
 
+@AndroidEntryPoint
 class RegistrationActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegistrationBinding
-
+    private val viewModel: CallingVM by viewModels()
     private val firestore = FirebaseFirestore.getInstance()
     private val fireMessage = FirebaseMessaging.getInstance().token
+
+    private var mCurrentCallId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if ("".isNullOrEmpty()/*!SharedPreferenceUtil.getFCMToken().isNullOrEmpty()*/) {
+        lifecycleScope.launch {
+            viewModel.fcmCallerId.collect { currentCallId ->
+                if (currentCallId != null) {
+                    mCurrentCallId = currentCallId
+                }
+            }
+        }
+
+        if (mCurrentCallId.isNullOrEmpty()) {
             startActivity(Intent(this@RegistrationActivity, CallListActivity::class.java))
             finish()
         } else {

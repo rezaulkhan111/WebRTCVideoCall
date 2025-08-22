@@ -11,7 +11,9 @@ import com.example.firebasewebrtc.utils.AppConstants
 import com.example.firebasewebrtc.data.model.FirebaseRMessageDTO
 import com.example.firebasewebrtc.R
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class IncomingCallActivity : AppCompatActivity() {
 
     private lateinit var callerId: String

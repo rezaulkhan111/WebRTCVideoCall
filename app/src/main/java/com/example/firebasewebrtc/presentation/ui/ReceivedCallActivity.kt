@@ -9,10 +9,12 @@ import com.example.firebasewebrtc.utils.AppConstants
 import com.example.firebasewebrtc.presentation.base.BaseActivity
 import com.example.firebasewebrtc.databinding.ActivityReceivedCallBinding
 import com.example.firebasewebrtc.presentation.viewmodel.CallingVM
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.webrtc.SurfaceViewRenderer
 
+@AndroidEntryPoint
 class ReceivedCallActivity : BaseActivity() {
     private lateinit var binding: ActivityReceivedCallBinding
     private val callViewModel: CallingVM by viewModels()
