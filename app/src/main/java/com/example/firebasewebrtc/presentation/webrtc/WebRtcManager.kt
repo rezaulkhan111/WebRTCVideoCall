@@ -7,6 +7,7 @@ import com.example.firebasewebrtc.utils.VideoService
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.Camera2Enumerator
@@ -27,19 +28,11 @@ import org.webrtc.VideoCapturer
 import org.webrtc.VideoSource
 import org.webrtc.VideoTrack
 
-class WebRtcManager @AssistedInject constructor(
-    @Assisted private val contextRef: Context,
+class WebRtcManager(
+    private val contextRef: Context,
     private val eventListener: WebRtcEventListener,
-    @Assisted private val isAudioCallOnly: Boolean = false
+    private val isAudioCallOnly: Boolean = false
 ) {
-
-    @AssistedFactory
-    interface Factory {
-        fun create(
-            @Assisted contextRef: Context,
-            @Assisted isAudioCallOnly: Boolean
-        ): WebRtcManager
-    }
 
     private lateinit var mPeerConnectionFactory: PeerConnectionFactory
     private var mPeerConnection: PeerConnection? = null

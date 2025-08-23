@@ -20,8 +20,8 @@ class RegistrationActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegistrationBinding
     private val viewModel: CallingVM by viewModels()
-    private val firestore = FirebaseFirestore.getInstance()
-    private val fireMessage = FirebaseMessaging.getInstance().token
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val fireMessage by lazy { FirebaseMessaging.getInstance().token }
 
     private var mCurrentCallId: String? = null
 

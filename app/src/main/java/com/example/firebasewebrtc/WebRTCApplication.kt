@@ -4,7 +4,9 @@ import android.app.Application
 import android.content.SharedPreferences
 import com.example.firebasewebrtc.di.ApplicationComponent
 import com.example.firebasewebrtc.di.DaggerApplicationComponent
+import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
+import org.webrtc.PeerConnectionFactory
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -23,6 +25,8 @@ class WebRTCApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        FirebaseApp.initializeApp(this)
 //        instance = this
 //        preferences = getSharedPreferences("com.example.firebasewebrtc", MODE_PRIVATE)
     }

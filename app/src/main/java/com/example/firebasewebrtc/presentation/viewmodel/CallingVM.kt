@@ -32,11 +32,8 @@ import javax.inject.Inject
 class CallingVM @Inject constructor(
     private val repository: ICallRepository,
     private val sharedPref: SharedPreferenceUtil,
-    private val webRtcManagerFactory: WebRtcManager.Factory,
     @ApplicationContext private val context: Context
-) : ViewModel(),
-    SignalingListener,
-    WebRtcEventListener {
+) : ViewModel(), SignalingListener, WebRtcEventListener {
 
     private val _callStatus = MutableStateFlow("Initializing")
     private val _repositories = MutableStateFlow<NotificationRequestDTO?>(null)
@@ -66,8 +63,9 @@ class CallingVM @Inject constructor(
             return
         }
 
-        _webRtcManager = webRtcManagerFactory.create(
-            contextRef = getApplication(context), // A context provider
+        _webRtcManager = WebRtcManager(
+            contextRef = getApplication(context),
+            eventListener = this,
             isAudioCallOnly = isAudioOnly
         )
         _webRtcManager?.initPeerConnectionFactory()
