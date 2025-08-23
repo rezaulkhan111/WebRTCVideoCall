@@ -4,6 +4,7 @@ object AppConstants {
     const val FCM_collection = "calls"
     const val isAudioOrVideo = "AudioVideoCallPref"
     const val Common_Transfer_Data = "JsonData"
+    const val ACTION_START_CALL = "com.example.firebasewebrtc.START_CALL"
 }
 
 enum class VideoService {

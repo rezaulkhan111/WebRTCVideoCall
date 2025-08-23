@@ -1,10 +1,8 @@
 package com.example.firebasewebrtc.service
 
 import android.content.Intent
-import android.util.Log
 import com.example.firebasewebrtc.data.model.FirebaseRMessageDTO
 import com.example.firebasewebrtc.data.pref.SharedPreferenceUtil
-import com.example.firebasewebrtc.presentation.ui.IncomingCallActivity
 import com.example.firebasewebrtc.utils.AppConstants
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -53,11 +51,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 //        }
 //        this.startActivity(intent)
 
-        val intent = Intent(this, CallService::class.java).apply {
+        val intentService = Intent(this, CallService::class.java).apply {
             putExtra(AppConstants.Common_Transfer_Data, Gson().toJson(localFcmData))
             action = AppConstants.ACTION_START_CALL
         }
 
-        startService(intent)
+        startService(intentService)
     }
 }
